@@ -1,0 +1,12 @@
+c = 5;
+int a;
+float b1b;
+int c;
+
+a = 2;
+b = 1.1;
+if ( a > b )
+c = a + b;
+else
+c = a - b;
+while ( a < b )
