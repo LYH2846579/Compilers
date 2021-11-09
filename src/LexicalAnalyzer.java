@@ -18,7 +18,7 @@ public class LexicalAnalyzer
     public void test() throws IOException
     {
         LinkedList<Word> analysis = analysis();
-        IdentityHashMap<String, TableNode> table = createTable(analysis);
+        HashMap<String, TableNode> table = createTable(analysis);
         analysis.forEach(word -> {
             System.out.println(word);
         });
@@ -250,8 +250,9 @@ public class LexicalAnalyzer
         }
 
         //匹配二元操作符
-        regStr = "==|>=|<=|!=";
-        s.matches(regStr);
+        //regStr = "==|>=|<=|!=";
+        regStr = "^[=|>|<|!]=$";
+        matches = s.matches(regStr);            //返回值变量一定要有接收呀!!!!
         if(matches)
         {
             Word word = new Word("BinOP",s,null);
@@ -262,10 +263,10 @@ public class LexicalAnalyzer
     }
 
     //创建符号表 -> 这里其实采用的是自底向上的分析方式来创建符号表  "KL:" -> Node
-    public IdentityHashMap<String,TableNode> createTable(LinkedList<Word> list)
+    public HashMap<String,TableNode> createTable(LinkedList<Word> list)
     {
         //创建符号表 -> 不允许重复定义
-        IdentityHashMap<String,TableNode> ihashMap = new IdentityHashMap<>();
+        HashMap<String,TableNode> ihashMap = new HashMap<>();
         //创建一个删除列表
         //LinkedList<Integer> deleteList = new LinkedList<>();
         //创建一个删除栈
@@ -297,6 +298,7 @@ public class LexicalAnalyzer
                         TableNode tableNode = new TableNode(0,null,word1.getName(),word);
                         //加入符号表 -> 以变量名作为key
                         ihashMap.put(word1.getName(),tableNode);
+
 
                         //将这三个元素从原来的列表中剔除 -> 需要修改!!!
                         //list.remove(index);

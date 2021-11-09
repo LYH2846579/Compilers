@@ -1,6 +1,8 @@
+a >= b;
 c = 5;
 int a;
 float b1b;
+int c; int e;
 int c;
 
 a = 2;
@@ -10,3 +12,12 @@ c = a + b;
 else
 c = a - b;
 while ( a < b )
+
+int d;
+if ( d >= a )
+    d = a;
+else
+    d = b;
+
+if ( d == a )
+    d = a;

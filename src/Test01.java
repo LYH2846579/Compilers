@@ -102,4 +102,17 @@ public class Test01
         }
     }
 
+    @Test       //测试 ->
+    public void test7()
+    {
+        char c = '→';               //8594
+        System.out.println(c);
+
+        c = (char)(26);
+        System.out.println(c);
+
+        String s = "→";             //8594
+        System.out.println(s);
+    }
+
 }
