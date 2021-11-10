@@ -14,17 +14,23 @@ public class State
     //项存储链表
     private LinkedList<String> str;
     //未处理的变量链表
-    private LinkedList<String> UndealValue;
+    private LinkedList<String> list1;
+    //已经处理的变量链表
+    private LinkedList<String> list2;
 
     public State() {
     }
     public State(String name) {
         this.name = name;
         this.str = new LinkedList<>();
+        this.list1 = new LinkedList<>();
+        this.list2 = new LinkedList<>();
     }
-    public State(String name, LinkedList<String> str) {
+    public State(String name, LinkedList<String> str, LinkedList<String> list1, LinkedList<String> list2) {
         this.name = name;
         this.str = str;
+        this.list1 = list1;
+        this.list2 = list2;
     }
 
     public String getName() {
@@ -39,4 +45,18 @@ public class State
     public void setStr(LinkedList<String> str) {
         this.str = str;
     }
+    public LinkedList<String> getList1() {
+        return list1;
+    }
+    public void setList1(LinkedList<String> list1) {
+        this.list1 = list1;
+    }
+    public LinkedList<String> getList2() {
+        return list2;
+    }
+    public void setList2(LinkedList<String> list2) {
+        this.list2 = list2;
+    }
+
+    
 }

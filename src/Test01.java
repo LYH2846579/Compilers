@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.LinkedList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author LYHstart
@@ -115,4 +117,20 @@ public class Test01
         System.out.println(s);
     }
 
+    @Test   //使用正则表达式解决输入、状态分析问题
+    public void test8()
+    {
+        String s = "E → .E+T";
+        String[] split = s.split(" → ");
+        String s1 = split[1];
+        String regStr = "\\..";
+        Pattern pattern = Pattern.compile(regStr);
+        Matcher matcher = pattern.matcher(s1);
+        if(matcher.find())
+        {
+            String group = matcher.group(0);
+            String s2 = group.replaceAll("\\.", "");
+            System.out.println(s2);
+        }
+    }
 }
