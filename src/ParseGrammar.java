@@ -4,9 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,9 +24,14 @@ public class ParseGrammar
     HashMap<String,State> itemState = new HashMap<>();
     //创建一个状态转换存储结构，用于存储在读入或者规约出某个符号之后的转换状态
     //如何存储状态转换?     使用如下数据结构存储
-    HashMap<Map.Entry<State,String>,State> stateHashMap = new HashMap<>();
+    HashMap<State,HashMap<String,State>> stateHashMap = new HashMap<>();
     //创建一个未推导的状态存储链表
     LinkedList<State> undisposedStateList = new LinkedList<>();
+    //设置一个状态记录符
+    static int index = 0;
+    //创建一个可规约项记录表 -> 用于记录当输入达到某种情况之下，可以进行规约的状态
+    HashMap<String,State> specificationList = new HashMap<>();
+
 
 
     @Test
@@ -109,7 +112,8 @@ public class ParseGrammar
     public void stateTransition()
     {
         //设置一个状态记录符
-        int index = 0;
+        //static int index = 0;   -> 直接搞成静态变量
+
         //首先创建一个初始状态
         State state = new State("I"+index);
         //将文法的开始符号加入到未处理的队列中
@@ -185,7 +189,7 @@ public class ParseGrammar
             //2、创建一个存储分析结果的队列 -> 采用 HashMap<String,Linkedlist<String>>的格式进程存储
             HashMap<String,LinkedList<String>> tempList = new HashMap<>();
 
-            //首先针对state中的Str中的每一个字符串进行分析
+            //3、首先针对state中的Str中的每一个字符串进行分析
             state1.getStr().forEach(s -> {
                 //首先将字符串依照" → "进行划分
                 String[] split = s.split(" → ");
@@ -203,7 +207,13 @@ public class ParseGrammar
                 if(matcher.find())
                 {
                     String group = matcher.group(0);
-                    group = group.replaceAll("\\.","");
+                    //用于暂存替代.之后的字符串
+                    String repStr;
+                    repStr = group.replaceAll("\\.","");
+
+                    //针对于关键字的匹配分析  -> 当修改文法之后，这一部分需要进行修改
+                    //采取编码方式优化处理
+
                     //在该状态的templist中寻找是否存在该key值的元素
                     LinkedList<String> linkedList = tempList.get(group);
                     if(linkedList != null)
@@ -240,6 +250,154 @@ public class ParseGrammar
                     linkedList.offerLast(newStr);
                 }
             });
+
+            System.out.println();
+            System.out.println();
+
+            //对Str中的字符串分析结束之后得到templist中的各项
+            //接下来要对每一项进行分析，整理成为state的格式并将其加入到undisposedStateList之中
+            //在生成state格式之前，要先在itemState之中查询其所含项的任意一项  -> 校验是否已经有该项存在
+            //若不存在该项 -> 创建一个新的状态state将原所含项包含到Str之中
+            //判断.之后的元素是否属于语法变量 -> 通过查询synVar来实现
+            //倘若是语法变量，则将以该语法变量生成的产生式全部加入到新生成的状态之中
+
+            //首先对templist进行遍历
+            tempList.forEach((key,value)->{
+                //记录一下输入的字符
+                String inputStr = key.replaceAll("\\.","");
+                //首先查询是否有对应的项存在 -> (已经属于某一个项集闭包)
+                String s = value.get(0);    //s是否存在为0的情况?
+                State state2 = itemState.get(s);
+                //倘若不存在该状态
+                if(state2 == null)
+                {
+                    //创建一个新的状态
+                    index++;
+                    state2 = new State("I"+index);
+                    //将value中的每一项加入其中
+                    for(String s1:value)
+                    {
+                        state2.getStr().offerLast(s1);
+                        //为了正则匹配的正确性，首先将空格进行剔除
+                        s1 = s1.replaceAll(" ", "");
+
+                        //同时判断是否要进行等价状态的加入 -> 分析.后的元素是否在synVar中出现
+                        //1.对s1进行匹配
+                        Matcher matcher = Pattern.compile("\\..").matcher(s1);
+                        boolean matches = matcher.find();
+                        //倘若匹配成功 -> 意味着.之后还存在着元素
+                        //判断该元素是否为语法变量 -> 倘若是语法变量就将其等价状态加入该状态之中
+                        if(matches)
+                        {
+                            String group = matcher.group(0);
+                            //将.去除  -> 注意一定是\\.
+                            group = group.replaceAll("\\.","");
+                            //在synVar中查询是否有该记录存在
+                            //HashMap<String, LinkedList<String>> map = synVar.get(group);
+                            boolean b = synVar.containsKey(group);
+                            //倘若查询到map -> 则为语法变量 -> 需要将等价状态进行合并
+                            if(b)       //比map == mull 要好很多
+                            {
+                                //将该值加入到list1之中等待后续处理
+                                state2.getList1().offerLast(group);
+                            }
+                            //倘若map == null  -> 为终结符号 -> 不会有等等价状态
+                        }
+                        else{
+                            //倘若没有match成功 -> 意味着.之后将不再有元素出现
+                            //就将其直接加入到可以规约的链表之中 -> 并且跳转状态为state1
+                            this.specificationList.put(s1,state1);
+                            //但是也要将其加入到该状态之中!
+                            //state2.getStr().offerLast(s1); -> 一上来不久加进去了?
+                        }
+                    }
+                    //遍历完成之后，扫描state2的未处理序列是否为空 -> 这里和I0的处理方案相似
+                    while(true) //这里需要将.给加上
+                    {
+                        //倘若待处理的元素为零，则退出循环
+                        if(state2.getList1().size() == 0)
+                            break;
+
+                        //取出第一个元素
+                        String s1 = state2.getList1().pollFirst();
+                        //记录在list2之中
+                        state2.getList2().offerLast(s1);
+                        //从synVar中进行分析
+                        HashMap<String, LinkedList<String>> map = synVar.get(s1);
+                        //将等价状态加入到Str之中，并且分析首元素是否在已经处理过的队列之中，倘若没有
+                        //还要将其加入到list1之中
+                        for(Map.Entry<String,LinkedList<String>> entry:map.entrySet())
+                        {
+                            //将s1和key值合并之后加入到state2的Str之中
+                            state2.getStr().offerLast(s1 +" → ."+ entry.getKey());
+                            //并分析value的首元素是否是语法变量且未被分析过
+                            String s2 = entry.getValue().get(0);    //获取首元素
+                            //判断是否为s1
+                            if(!s2.equals(s1))
+                            {
+                                boolean flag = false;
+                                //判断是否被分析过
+                                for(String s3:state2.getList2())
+                                {
+                                    if(s3.equals(s2))
+                                        flag = true;
+                                }
+                                //倘若没有被分析过
+                                if(!flag)
+                                {
+                                    //在synVar中查询
+                                    boolean b = synVar.containsKey(s2);
+                                    if(b)   //倘若存在b
+                                    {
+                                        //将s2加入到state2.list1之中
+                                        state2.getList1().offerLast(s2);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    //此时一个状态应当分析完毕 -> 将该状态加入到状态列表之中
+                    this.stateList.offerLast(state2);
+                    //并将该状态的所有项加入到itemList之中
+                    for(String s4:state2.getStr())
+                    {
+                        this.itemState.put(s4,state2);
+                    }
+
+                    //接下来记录状态转换
+                    HashMap<String, State> state1Map = this.stateHashMap.get(state1);
+                    if(state1Map == null)
+                    {
+                        //倘若为null，就创建一个新的加入进去
+                        state1Map = new HashMap<>();
+                        this.stateHashMap.put(state1,state1Map);
+                    }
+                    //接下来将状态转换写入
+                    State state3 = state1Map.get(inputStr);
+                    if(state3 == null)
+                    {
+                        //倘若未记载这个状态
+                        state1Map.put(inputStr,state2);
+                    }
+
+
+                    System.out.println();
+                    System.out.println();
+                    System.out.println();
+                }
+                //倘若存在该状态，记录一下转换就好了
+                else
+                {
+                    //此时state2不为Null -> 说明之前已经创建过包含该项的状态
+                    //因此取itemState中进行查找
+                    //state2 = this.itemState.get(s);
+                    //设置转换图
+
+
+                }
+            });
+
 
             System.out.println();
             System.out.println();

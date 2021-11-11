@@ -133,4 +133,22 @@ public class Test01
             System.out.println(s2);
         }
     }
+
+    @Test   //对等价项合并及可规约状态的判断分析
+    public void test9()
+    {
+        String s1 = "E → .E+T";
+        String s2 = "E → E.";
+
+        Matcher matcher = Pattern.compile("\\..").matcher(s2);
+        boolean b = matcher.find();
+        if(b)
+        {
+            System.out.println(matcher.group(0));
+        }
+        else
+            System.out.println("此项可以进行规约!");
+
+
+    }
 }
