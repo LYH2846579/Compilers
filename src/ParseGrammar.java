@@ -476,3 +476,13 @@ F → ( E )
 F → id
 F → digits
  */
+
+/*
+P → E
+E → E + T
+E → T
+T → T * F
+T → F
+F → ( E )
+F → d
+ */
