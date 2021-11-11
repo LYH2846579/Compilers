@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.sql.SQLOutput;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -184,6 +185,8 @@ public class ParseGrammar
         //倘若待处理的队列不为空 -> 继续处理   -> 注意以下使用state1作为状态标识符
         while(this.undisposedStateList.size() != 0)
         {
+            //退出判断
+
             //1、取出首状态来处理
             State state1 = this.undisposedStateList.pollFirst();
             //2、创建一个存储分析结果的队列 -> 采用 HashMap<String,Linkedlist<String>>的格式进程存储
@@ -202,6 +205,9 @@ public class ParseGrammar
                 //对bytes进行遍历
                 //...
 
+                //注意空格的影响!
+                strValue = strValue.replaceAll(" ", "");
+
                 //这里是否可以使用正则表达式的方式快速实现匹配?   可以!查看Test01中的test8
                 Matcher matcher = Pattern.compile("\\..").matcher(strValue);
                 if(matcher.find())
@@ -214,8 +220,8 @@ public class ParseGrammar
                     //针对于关键字的匹配分析  -> 当修改文法之后，这一部分需要进行修改
                     //采取编码方式优化处理
 
-                    //在该状态的templist中寻找是否存在该key值的元素
-                    LinkedList<String> linkedList = tempList.get(group);
+                    //在该状态的templist中寻找是否存在该key值的元素  --> 一定注意格式
+                    LinkedList<String> linkedList = tempList.get("."+repStr);
                     if(linkedList != null)
                     {
                         //将两个状态进行合并
@@ -241,9 +247,17 @@ public class ParseGrammar
                             tag = i;
                         }
                     }
-                    //交换位置
-                    chars[tag] = chars[tag+1];
-                    chars[tag+1] = '.';
+                    //交换位置 -> 需要判断是否为空格!!!
+                    if(chars[tag+1] == ' ')
+                    {
+                        chars[tag] = chars[tag+2];
+                        chars[tag+2] = '.';
+                    }
+                    else
+                    {
+                        chars[tag] = chars[tag+1];
+                        chars[tag+1] = '.';
+                    }
                     //接下来将char[]转换为String   -> 生成一个新的字符串
                     String newStr = new String(chars);
                     //将其加入到序列之中
@@ -365,26 +379,12 @@ public class ParseGrammar
                         this.itemState.put(s4,state2);
                     }
 
-                    //接下来记录状态转换
-                    HashMap<String, State> state1Map = this.stateHashMap.get(state1);
-                    if(state1Map == null)
-                    {
-                        //倘若为null，就创建一个新的加入进去
-                        state1Map = new HashMap<>();
-                        this.stateHashMap.put(state1,state1Map);
-                    }
-                    //接下来将状态转换写入
-                    State state3 = state1Map.get(inputStr);
-                    if(state3 == null)
-                    {
-                        //倘若未记载这个状态
-                        state1Map.put(inputStr,state2);
-                    }
+                    System.out.println();
+                    System.out.println();
+                    System.out.println();
 
-
-                    System.out.println();
-                    System.out.println();
-                    System.out.println();
+                    //将这个新的状态加入到待处理队列之中  -> 而不是什么都加
+                    undisposedStateList.offerLast(state2);
                 }
                 //倘若存在该状态，记录一下转换就好了
                 else
@@ -393,9 +393,27 @@ public class ParseGrammar
                     //因此取itemState中进行查找
                     //state2 = this.itemState.get(s);
                     //设置转换图
-
-
+                    //这一部分相同，不妨将其与if中的语句进行合并
                 }
+
+                //接下来记录状态转换
+                HashMap<String, State> state1Map = this.stateHashMap.get(state1);
+                if(state1Map == null)
+                {
+                    //倘若为null，就创建一个新的加入进去
+                    state1Map = new HashMap<>();
+                    this.stateHashMap.put(state1,state1Map);
+                }
+                //接下来将状态转换写入
+                State state3 = state1Map.get(inputStr);
+                if(state3 == null)
+                {
+                    //倘若未记载这个状态
+                    state1Map.put(inputStr,state2);
+                }
+
+                //将这个新的状态加入到待处理队列之中 -> 只有新创建的才会加进去
+                //undisposedStateList.offerLast(state2);
             });
 
 
@@ -403,6 +421,36 @@ public class ParseGrammar
             System.out.println();
         }
 
+        //现在已经可以正常生成11个状态!  ->  可是存在格式上一些丑陋的地方
+        //不妨对所有状态将空格进行抽出   ->  统一规格
+
+        //foreach并不会改变原有值!
+//        stateList.forEach(state1 -> {
+//            state1.getStr().forEach(s -> {
+//                s.replaceAll(" ","");
+//            });
+//        });
+
+        //格式优化
+        for (int i = 0; i < stateList.size(); i++)
+        {
+            //获取该状态
+            State state1 = stateList.get(i);
+            //创建一个新的项集闭包链表
+            LinkedList<String> newStr = new LinkedList<>();
+            LinkedList<String> str = state1.getStr();
+            //状态处理
+            str.forEach(s -> {
+                newStr.offerLast(s.replaceAll(" ",""));
+            });
+
+            //替代原有项集闭包
+            state1.setStr(newStr);
+        }
+
+        System.out.println();
+        System.out.println();
+        System.out.println();
     }
 }
 
