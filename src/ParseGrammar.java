@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.SQLOutput;
+import java.time.temporal.ValueRange;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,6 +15,7 @@ import java.util.regex.Pattern;
  * @create 2021-11-09 15:23
  *
  * 针对给定的文法产生式进行解析
+ * 首先生成状态转换图
  */
 public class ParseGrammar
 {
@@ -33,6 +35,13 @@ public class ParseGrammar
     //创建一个可规约项记录表 -> 用于记录当输入达到某种情况之下，可以进行规约的状态
     HashMap<String,State> specificationList = new HashMap<>();
 
+    //存储语法变量的first集
+    HashMap<String,LinkedList<String>> firstlist = new HashMap<>();
+    //存储语法变量的last集
+    HashMap<String,LinkedList<String>> followlist = new HashMap<>();
+
+    //由于first集求解的特殊性，这里不妨采取一种回填的方式进行处理
+    //
 
 
     @Test
@@ -219,6 +228,10 @@ public class ParseGrammar
 
                     //针对于关键字的匹配分析  -> 当修改文法之后，这一部分需要进行修改
                     //采取编码方式优化处理
+                    //针对id、while、if等等均采取单字符编码处理!
+
+
+
 
                     //在该状态的templist中寻找是否存在该key值的元素  --> 一定注意格式
                     LinkedList<String> linkedList = tempList.get("."+repStr);
@@ -452,6 +465,39 @@ public class ParseGrammar
         System.out.println();
         System.out.println();
     }
+
+    //求解语法变量的first集
+    public void firstCollection()
+    {
+        //需要根据文法来生成
+        synVar.forEach((key,value) -> {
+
+            //查询是否存在该语法变量对应的first集
+            boolean b = firstlist.containsKey(key);
+            if(b)
+            {
+                //倘若存在该记录 -> 啥也不做
+            }
+            else
+            {
+                //倘若不存在该记录
+                LinkedList<String> list = new LinkedList<>();
+                value.forEach((key1,value1) -> {
+                    //获取内部，分析其首元素
+                    String s = value1.pollFirst();
+                    //首先分析该元素是否为语法变量
+                    boolean b1 = synVar.containsKey(s);
+                    //若是语法变量 -> 需要判断是否是自己
+                    if(b1)
+                    {
+                        //就将其first集加入分析的元素的first集之中
+                        //首先判断该元素的first集合是否已经分析出来了
+
+                    }
+                });
+            }
+        });
+    }
 }
 
 
@@ -469,6 +515,7 @@ C → E == E
 E → E + T
 E → E – T
 E → T
+
 T → F
 T → T * F
 T → T / F
