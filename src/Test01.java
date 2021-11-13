@@ -198,4 +198,22 @@ public class Test01
             System.out.println(true);
         }
     }
+
+
+    @Test   //测试HashMap使用foreach修改的情况   -> 不会改变!
+    public void test13()
+    {
+        HashMap<String,String> map = new HashMap<>();
+        map.put("F -> E","");
+        map.put("F ->E","");
+
+        map.forEach((s1,s2) -> {
+            s1.replaceAll(" ","");
+            s2.replaceAll(" ","");
+        });
+
+        map.forEach((key,value) -> {
+            System.out.println(key+value);
+        });
+    }
 }

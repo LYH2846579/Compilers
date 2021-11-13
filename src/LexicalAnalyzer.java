@@ -225,6 +225,10 @@ public class LexicalAnalyzer
 
 
         }
+
+        //加入终结符号
+        list.add(new Word("KeyWord","$","$"));
+
         return list;
     }
 

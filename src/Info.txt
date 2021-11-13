@@ -182,7 +182,21 @@
                     -> 为了更好的通配性，干就完了!
                         -> 这里使用LinkedList在加入之前使用contains()判断一下即可解决重复加入的问题
 
+    14、目前已经可以将语法转换图、first集、follow集生成    2021-11-13 22:53
+      (1) 接下来如何构建Action表和GoTo表是关键所在
+        -> 状态已经可以得到，应当在文法分析阶段将所有的终结符号保存下来!   -> foreach+if即可解决
+      (2) 生成转换表 -> 开辟数组存储?
+        -> 直接使用array+HashMap存储?
+        -> 创建一个ArrayList用于存储状态信息，其中每一个元素为一个HashMap，用于存储转换信息
+            -> 比如在ArrayList[0]的位置中有一项Entry为(id,s5)
+                -> 表示在状态I0阶段，读取到id之后转移到I5状态
+        -> 当然不要忘记在终极符号列表之中加入$
+        -> 对应的在词法分析Token中也要加入$
 
+        -> 使用array存储并不能得到很多有效信息!
+            -> 不妨使用HashMap进行存储！ --> 但是采取Hash之后线性结构会被打破!
+            -> 使用get来获取
+            HashMap<State,HashMap<String,State>> actGoToTable = new HashMap<>();
 
 
 

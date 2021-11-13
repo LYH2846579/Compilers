@@ -31,6 +31,8 @@ public class ParseGrammar
     static int index = 0;
     //创建一个可规约项记录表 -> 用于记录当输入达到某种情况之下，可以进行规约的状态
     HashMap<String,State> specificationList = new HashMap<>();
+    //终结符号存储链表
+    LinkedList<String> symList = new LinkedList<>();
 
     //存储语法变量的first集
     HashMap<String,HashSet<String>> firstlist = new HashMap<>();
@@ -50,7 +52,10 @@ public class ParseGrammar
     //保存已经被更新的follow集
     LinkedList<String> updateList = new LinkedList<>();
 
-
+    //生成Action表和GoTo表
+    HashMap<State,HashMap<String,State>> actGoToTable = new HashMap<>();
+    //经过统一规格之后的itemState表
+    HashMap<String,State> itList = new HashMap<>();
 
     @Test
     public void test() throws IOException
@@ -59,10 +64,10 @@ public class ParseGrammar
         this.parse(synVar);
         //接下来要通过查表的方式来构建状态转换图
         //生成状态转换表
-        //this.stateTransition();
-        //this.firstCollection();
+        this.stateTransition();
+        this.firstCollection();
         this.followCollection();
-
+        this.createActionGoToTable();
     }
 
     //处理文法
@@ -124,6 +129,25 @@ public class ParseGrammar
             //将原式与字符单元存储链表作为一个Entry加入map中
             map.put(s2,list);
         }
+
+        //记录终极符号
+        synVar.forEach((key,value) -> {
+            value.forEach((key1,value1) -> {
+                value1.forEach(s -> {
+                    if(!synVar.containsKey(s))
+                    {
+                        //判断是否已经加入其中
+                        if(!symList.contains(s))
+                        {
+                            symList.add(s);
+                        }
+                    }
+                });
+            });
+        });
+
+        //加入终止符号
+        symList.add("$");
 
         System.out.println();
     }
@@ -851,6 +875,78 @@ public class ParseGrammar
         System.out.println();
         System.out.println();
 
+    }
+
+    //生成Action表和GoTo表
+    public void createActionGoToTable()
+    {
+        //获取状态数量 ->　开辟多大的链表     //list无需开辟!
+
+        /*
+        //将对应的状态加入到对应的位置上即可
+        int index = 0;
+        while(actGoToTable.size() != stateList.size())
+        {
+            for (int i = 0; i < stateList.size(); i++)
+            {
+                State state = stateList.get(i);
+                if(state.getName().equals("I"+index))
+                {
+                    //存储state信息 -> 这也是为何修改ArrayList为HashMap的原因
+                    actGoToTable.put(state,new HashMap<>());
+                }
+            }
+            index++;
+        }
+        */
+
+        //由于引入HashMap之后将原有的线性结构打破 -> 因此无规律插入即可!
+        stateList.forEach(state-> {
+            actGoToTable.put(state,new HashMap<>());
+        });
+
+        //遍历状态转换记录表，设置Action表
+        stateHashMap.forEach((key,value) -> {
+            //获取到key在actGoToTable中的位置
+            HashMap<String, State> map = actGoToTable.get(key);
+            //接下来遍历value -> 生成转换表
+            value.forEach((key1,value1) -> {
+                map.put(key1,value1);
+            });
+        });
+
+        //遍历规约记录表，生成GoTo表  --> 这里需要查询一下key所属的状态
+        //使用ItemState进行查询
+
+        //注意，itemState和specificationList中规格不一的问题!
+        //这里采取将itemState中空格删除的方法统一规格!
+        //itemState.forEach((key,value) -> {
+        //    key = key.replaceAll(" ","");         //不可以使用foreach
+        //});
+
+//        for (int i = 0; i < itemState.size(); i++)
+//        {
+//            Set<Map.Entry<String, State>> entries = itemState.entrySet();
+//            itemState.remove(state);
+//
+//        }
+
+        //与其替换处理，不如重新生成一个得了!
+        itemState.forEach((key,value) -> {
+            itList.put(key.replaceAll(" ",""),value);
+        });
+
+        //可规约的项所属的状态一定唯一!
+        specificationList.forEach((key,value) -> {
+            State state = itList.get(key);
+            HashMap<String, State> map = actGoToTable.get(state);
+            map.put(key,value);
+        });
+
+
+        System.out.println();
+        System.out.println();
+        System.out.println();
 
     }
 }
