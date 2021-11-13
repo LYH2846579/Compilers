@@ -36,12 +36,14 @@ public class ParseGrammar
     HashMap<String,State> specificationList = new HashMap<>();
 
     //存储语法变量的first集
-    HashMap<String,LinkedList<String>> firstlist = new HashMap<>();
+    HashMap<String,HashSet<String>> firstlist = new HashMap<>();
     //存储语法变量的last集
-    HashMap<String,LinkedList<String>> followlist = new HashMap<>();
+    HashMap<String,HashSet<String>> followlist = new HashMap<>();
 
-    //由于first集求解的特殊性，这里不妨采取一种回填的方式进行处理
-    //
+    //由于first集求解的特殊性，这里不妨采取一种回填的方式进行处理  -> 存储语法变量及待回填的first集
+    HashMap<String,LinkedList<String>> backfillMap = new HashMap<>();
+    //存储backfillMap中list为0等待回填其他first集的元素的链表
+    LinkedList<String> backfillList = new LinkedList<>();
 
 
     @Test
@@ -52,6 +54,7 @@ public class ParseGrammar
         //接下来要通过查表的方式来构建状态转换图
         //生成状态转换表
         this.stateTransition();
+        this.firstCollection();
 
     }
 
@@ -469,6 +472,12 @@ public class ParseGrammar
     //求解语法变量的first集
     public void firstCollection()
     {
+        //为了防止在查询回填表时存在的空指针问题，不妨一开始就设置好
+        synVar.forEach((key,value) -> {
+            //针对于每一个key进行都创建一个对应的待填充链表
+            backfillMap.put(key,new LinkedList<>());
+        });
+
         //需要根据文法来生成
         synVar.forEach((key,value) -> {
 
@@ -481,22 +490,135 @@ public class ParseGrammar
             else
             {
                 //倘若不存在该记录
-                LinkedList<String> list = new LinkedList<>();
+                HashSet<String> set = new HashSet<>();
                 value.forEach((key1,value1) -> {
                     //获取内部，分析其首元素
-                    String s = value1.pollFirst();
-                    //首先分析该元素是否为语法变量
-                    boolean b1 = synVar.containsKey(s);
-                    //若是语法变量 -> 需要判断是否是自己
-                    if(b1)
-                    {
-                        //就将其first集加入分析的元素的first集之中
-                        //首先判断该元素的first集合是否已经分析出来了
+                    String s = value1.get(0);
+                    //由于foreach并不会改变原有值 -> 因此使用pollfirst()也可!!! ※
+                    //看test11中的测试！！！
 
+                    //左递归解决 ->　放在遍历完成之后-> 就晚了!
+
+                    if(!s.equals(key))
+                    {
+                        //首先分析该元素是否为语法变量
+                        boolean b1 = synVar.containsKey(s);
+                        //若是语法变量 -> 需要判断是否是自己
+                        if(b1)
+                        {
+                            //就将其first集加入分析的元素的first集之中
+                            //首先判断该元素的first集合是否已经分析出来了 -> 在firstlist中查询
+                            boolean b2 = firstlist.containsKey(s);
+                            if(b2)
+                            {
+                                //若存在该条记录 -> 查询该记录是否有待填充的记录
+                                LinkedList<String> linkedList = backfillMap.get(s);
+                                if(linkedList.size() == 0)
+                                {
+                                    //倘若无待填充的记录
+                                    //就将该语法变量的first集中的所有元素加入到当前语法变量的first集中
+                                    HashSet<String> strings = firstlist.get(s);
+                                    //将每一条记录加入其中        -> 会出现重复异常吗?    ->测试一下
+                                    strings.forEach(s1 -> {
+                                        set.add(s1);
+                                    });
+                                }
+                                else
+                                {
+                                    //倘若这条记录之中还有等待被其他语法变量的first集填充
+                                    // -> 就将该语法变量的first集记录在当前语法变量的回填列表之中
+                                    LinkedList<String> linkedList1 = backfillMap.get(key);
+                                    linkedList1.add(s);
+                                    //等待自底向上的回填
+                                }
+                            }
+                            else
+                            {
+                                //倘若这是first集中还没有关于该语法变量
+                                //修改backfilllist
+                                LinkedList<String> linkedList = backfillMap.get(key);
+                                linkedList.add(s);
+                            }
+                        }
+                        else
+                        {
+                            //倘若不是语法变量 -> 直接加入到其first集中即可
+                            set.add(s);
+                        }
                     }
                 });
+                //遍历完成之后，将新生成的first集加入到firstlist之中
+                firstlist.put(key,set);
+
+                //此时需要增加一个回填操作
+                //回填操作放在最后执行也可!
+                LinkedList<String> linkedList = backfillMap.get(key);
+                if(linkedList.size() == 0)
+                {
+                    //倘若无待回填的first集 -> 就将其加入到其他的first集之中
+                    //遍历backfillList
+                    backfillMap.forEach((key1,value1) -> {
+                        if(value1.contains(key))
+                        {
+                            HashSet<String> strings = firstlist.get(key1);
+                            firstlist.get(key).forEach(s -> {
+                                strings.add(s);
+                            });
+                            //同时去除记录
+                            value1.remove(key);
+                            //这里增加一个判断  -> 倘若这时候为0了
+                            if(value1.size() == 0)
+                            {
+                                backfillList.add(key1);
+                            }
+                        }
+
+
+                    });
+                }
             }
         });
+        //处理左递归问题 -->　处理的晚了！
+        //backfillMap.forEach((key,value) -> {
+        //    value.remove(key);
+        //});
+
+        //等待遍历完毕synVar之后 -> 所有的first即已经生成
+        //但是backfill中仍然有等待回填的记录 -> 消除掉所有的记录
+        //不妨设置一个填充链表，当待填充的记录达到语法变量的个数的时候停止循环
+        while(true)
+        {
+            //倘若待回填链表中的元素个数为0 -> 退出循环
+            if(backfillList.size() == 0)
+                break;
+
+            //取出一个在backfillList中不存在的语法变量进行回填
+            String s = backfillList.pollFirst();
+            //遍历backfillMap
+            backfillMap.forEach((key1,value1) -> {
+                if(value1.contains(s))
+                {
+                    HashSet<String> strings = firstlist.get(key1);
+                    firstlist.get(s).forEach(s2 -> {
+                        strings.add(s2);
+                    });
+                }
+                if(value1.contains(s))  //代码重复提示好烦!
+                {
+                    //同时去除记录
+                    value1.remove(s);
+                    //这里增加一个判断  -> 倘若这时候为0了
+                    if(value1.size() == 0)
+                    {
+                        backfillList.add(key1);
+                    }
+                }
+            });
+        }
+
+        System.out.println();
+        System.out.println();
+        System.out.println();
     }
 }
 
@@ -532,4 +654,17 @@ T → T * F
 T → F
 F → ( E )
 F → d
+ */
+
+/*
+P → S
+S → d
+S → E
+S → C
+C → E
+E → T
+T → F
+F → d
+F → ( E )
+F → t
  */

@@ -4,6 +4,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.time.temporal.ValueRange;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -148,7 +151,40 @@ public class Test01
         }
         else
             System.out.println("此项可以进行规约!");
+    }
 
+    @Test       //测试HashSet     -> 不会因为重复加入而产生异常
+    public void test10()
+    {
+        HashSet<String> set = new HashSet<>();
+
+        set.add("P");
+        set.add("P");
+        set.add("P");
+
+        set.forEach(s -> {
+            System.out.println(s);
+        });
+    }
+
+    @Test       //测试针对于HashMap的foreach
+    public void test11()
+    {
+        HashMap<String,LinkedList<String>> map = new HashMap<>();
+        map.put("P",new LinkedList<>());
+        map.put("T",new LinkedList<>());
+        map.put("F",new LinkedList<>());
+
+        map.forEach((key,value) -> {
+            value.add("N");
+            System.out.println(value.size());
+        });
+
+        map.forEach((key,value) -> {
+            System.out.println(value.get(0));
+            value.remove("N");
+            System.out.println(value.size());
+        });
 
     }
 }
