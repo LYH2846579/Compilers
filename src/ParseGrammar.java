@@ -2,10 +2,7 @@ import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.sql.SQLOutput;
-import java.time.temporal.ValueRange;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,13 +34,22 @@ public class ParseGrammar
 
     //存储语法变量的first集
     HashMap<String,HashSet<String>> firstlist = new HashMap<>();
-    //存储语法变量的last集
-    HashMap<String,HashSet<String>> followlist = new HashMap<>();
-
     //由于first集求解的特殊性，这里不妨采取一种回填的方式进行处理  -> 存储语法变量及待回填的first集
     HashMap<String,LinkedList<String>> backfillMap = new HashMap<>();
     //存储backfillMap中list为0等待回填其他first集的元素的链表
     LinkedList<String> backfillList = new LinkedList<>();
+
+    //存储语法变量的follow集
+    HashMap<String,HashSet<String>> followMap = new HashMap<>();
+    //存储推导过程之中得到的语法变量   -> 没啥大用处的校验结构
+    HashSet<String> tempSet = new HashSet<>();
+    //存储推导过程之中得到的语法变量
+    LinkedList<String> tempList = new LinkedList<>();
+    //follow集求解解决后更新的问题
+    HashMap<String,LinkedList<String>> updateMap = new HashMap<>();
+    //保存已经被更新的follow集
+    LinkedList<String> updateList = new LinkedList<>();
+
 
 
     @Test
@@ -53,8 +59,9 @@ public class ParseGrammar
         this.parse(synVar);
         //接下来要通过查表的方式来构建状态转换图
         //生成状态转换表
-        this.stateTransition();
-        this.firstCollection();
+        //this.stateTransition();
+        //this.firstCollection();
+        this.followCollection();
 
     }
 
@@ -620,6 +627,232 @@ public class ParseGrammar
         System.out.println();
         System.out.println();
     }
+
+    //推导follow集
+    public void followCollection()
+    {
+        //将文法的开始符号加入到tempSet之中 -> 有点画蛇添足了
+        HashSet<String> set = new HashSet<>();
+        //将$加入
+        set.add("$");
+        //处理文法开始符号的产生式
+        HashMap<String, LinkedList<String>> map = synVar.get("P");
+        //遍历所有产生式 ->　观察是否存在其他的包含有文法开始符号的产生式
+        //好吧，这种情况在此文法结构之中并不存在
+
+        //直接将其加入到follow集合队列之中
+        followMap.put("P",set);
+
+
+        //遍历其产生式
+        map.forEach((key,value) -> {
+            //在句子中进行分析
+            LinkedList<String> temp = new LinkedList<>();
+
+            //分析其中的语法变量
+            value.forEach((s -> {
+
+                if(synVar.containsKey(s))
+                {
+                    //判断是否重复
+                    if(!tempSet.contains(s))
+                    {
+                        tempSet.add(s);
+                        tempList.add(s);
+                        temp.add(s);
+                    }
+                }
+                //取出temp中的元素分析 -> 针对于每个句子进行分析
+                while (temp.size() != 0)
+                {
+                    String s1 = temp.pollFirst();
+                    //从表达式中获取s1所在的位置
+                    //1、判断是否位于尾部
+                    Matcher matcher = Pattern.compile(s1+".").matcher(key);
+                    if(matcher.find())
+                    {
+                        //发现了该语法变量 -> 根据语法分析得知这种情况肯定不存在!
+                        //...
+                    }
+                    else
+                    {
+                        //创建一个follow集   -> 文法开始符号仅仅可能产生S -> 且S的follow集仅仅由P决定
+                        //String group = matcher.group(0);
+                        //group = group.replaceAll(,"");
+                        String group = s1;
+                        //创建一个新的语法变量单元
+                        HashSet<String> set1 = new HashSet<>();
+                        followMap.get("P").forEach(s2 -> {
+                            set1.add(s2);
+                        });
+                        //并将其加入followMap之中
+                        followMap.put(group,set1);
+
+                        //载入关联列表之中 -> 这里肯定未创建过 -> 直接创建了
+                        LinkedList<String> list = new LinkedList<>();
+                        list.add(s1);
+                        updateMap.put("P",list);
+                    }
+                }
+            }));
+        });
+
+        //接下来分析语法变量
+        while(true)
+        {
+            //若无待分析的语法变量
+            if(tempList.size() == 0)
+            {
+                break;
+            }
+
+            //分析语法变量
+            String s = tempList.pollFirst();                //E
+            //接下来分析s的产生式
+            HashMap<String, LinkedList<String>> map1 = synVar.get(s);
+
+
+
+            //遍历map1获得语法变量
+            map1.forEach((key,value) -> {       //key:E + T、T
+                value.forEach(s1 -> {           //value 即为将key拆分
+                    //在句子中进行分析
+                    LinkedList<String> temp = new LinkedList<>();
+                    //统计出现的所有语法变量
+                    if(synVar.containsKey(s1))
+                    {
+                        //判断是否重复
+                        if(!tempSet.contains(s1))
+                        {
+                            tempList.add(s1);
+                            tempSet.add(s1);
+                        }
+                        //在任何情况之下都要加入到list之中
+                        temp.add(s1);
+                    }
+                    while(temp.size() != 0)
+                    {
+                        //设置一个查询标识位 ->用于记录使用正则表达式是否匹配到元素
+                        boolean flag = false;
+
+                        String s2 = temp.pollFirst();
+                        //查询是否位于表达式的中间          //注意空格的影响!
+                        Matcher matcher = Pattern.compile(s2 + " .").matcher(key);
+                        while(matcher.find())
+                        {
+                            flag = true;
+                            //由于可能存在不止一个，因此采取while循环
+                            String group = matcher.group(0);
+                            //取出这个终结符号来
+                            group = group.replaceAll(s2+" ","");
+                            //这时候group即为跟在语法变量之后的符号
+                            // -> 由于语法的特性导致必定为终结符号 -> 故这里就不做语法变量的判断
+                            //判断该元素是否已经在followMap中存在记录
+                            HashSet<String> strings = followMap.get(s2);
+                            if(strings != null)
+                            {
+                                //倘若已经存在该记录
+                                strings.add(group);
+
+                                //此时需要标记为更新了! -> 如果没有此条记录的话
+                                if(!updateList.contains(s2))
+                                    updateList.add(s2);
+                                //等待进一步的处理
+                            }
+                            else
+                            {
+                                //添加该记录
+                                strings = new HashSet<>();
+                                strings.add(group);
+                                //一定看清楚加入的变量是啥!!!       尤其是s、s1、s2等
+                                followMap.put(s2,strings);
+                            }
+                        }
+                        //若没找到 -> 一定位于产生式的最末端
+                        if(!flag)
+                        {
+                            //这就需要判断是否出现过该元素，且判断是否为s本身!
+                            //分析s2
+                            if(s2.equals(s))
+                            {
+                                //相等了就不加了
+                            }
+                            else
+                            {
+                                HashSet<String> strings = followMap.get(s);
+                                HashSet<String> strings1;
+                                //判断末尾元素的follow集是否存在
+                                if(followMap.containsKey(s2))
+                                {
+                                    strings1 = followMap.get(s2);
+                                }
+                                else
+                                {
+                                    strings1 = new HashSet<>();
+                                    followMap.put(s2,strings1);
+                                }
+                                //添加元素
+                                strings.forEach(s3 -> {
+                                    strings1.add(s3);
+                                });
+
+                                //在关联队列中记录
+                                boolean b = updateMap.containsKey(s);
+                                LinkedList<String> linkedList;
+                                if(b)
+                                {
+                                    linkedList = updateMap.get(s);
+                                }
+                                else
+                                {
+                                    linkedList = new LinkedList<>();
+                                    updateMap.put(s,linkedList);
+                                }
+                                //若不包含 -> 添加
+                                if(!linkedList.contains(s2))
+                                    linkedList.add(s2);
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        System.out.println();
+        System.out.println();
+
+        //结束之后要处理更新的follow集!
+        while(true)
+        {
+            if(updateList.size() == 0)
+                break;
+            else
+            {
+                String s = updateList.pollFirst();
+                LinkedList<String> linkedList = updateMap.get(s);
+                //解决空指针异常!
+                if(linkedList != null)
+                {
+                    linkedList.forEach(s1 -> {
+                        HashSet<String> strings = followMap.get(s1);
+                        HashSet<String> strings1 = followMap.get(s);
+                        strings1.forEach(s2 -> {
+                            strings.add(s2);
+                        });
+                        //将s1加入到updateFollow之中 -> 如果没有的话
+                        if(!updateList.contains(s1))
+                            updateList.add(s1);
+                    });
+                }
+            }
+        }
+
+        System.out.println();
+        System.out.println();
+        System.out.println();
+
+
+    }
 }
 
 
@@ -631,6 +864,7 @@ S → if ( C )  S
 S → if ( C )  S   else   S
 S → while ( C )  S
 S → S ; S
+
 C → E > E
 C → E < E
 C → E == E
@@ -667,4 +901,26 @@ T → F
 F → d
 F → ( E )
 F → t
+ */
+
+
+/*
+P → S
+S → d = E;
+S → f ( C ) S
+S → f ( C ) S e S
+S → w ( C ) S
+S → S ; S
+C → E > E
+C → E < E
+C → E & E
+E → E + T
+E → E – T
+E → T
+T → F
+T → T * F
+T → T / F
+F → ( E )
+F → d
+F → g
  */

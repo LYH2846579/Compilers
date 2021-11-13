@@ -187,4 +187,15 @@ public class Test01
         });
 
     }
+
+    @Test   //针对于LinkedList的一些性能测试
+    public void test12()
+    {
+        LinkedList<String> list = new LinkedList<>();
+        list.add("Q");
+        if (list.contains("Q"))
+        {
+            System.out.println(true);
+        }
+    }
 }
