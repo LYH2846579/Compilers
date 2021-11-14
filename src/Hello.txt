@@ -1,9 +1,7 @@
-a >= b;
-c = 5;
 int a;
 float b1b;
-int c; int e;
 int c;
+int e;
 
 a = 2;
 b = 1.1;

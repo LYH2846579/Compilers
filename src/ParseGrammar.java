@@ -16,6 +16,40 @@ import java.util.regex.Pattern;
  */
 public class ParseGrammar
 {
+    @Test   //内部测试
+    public void test() throws IOException
+    {
+        //文法经过处理之后，形成了一个三级链表
+        this.parse();
+        //接下来要通过查表的方式来构建状态转换图
+        //生成状态转换表
+        this.stateTransition();
+        this.firstCollection();
+        this.followCollection();
+        this.createActionGoToTable();
+    }
+
+
+    public ParseGrammar() {
+    }
+
+    public HashMap<String, HashMap<String, LinkedList<String>>> getSynVar() {
+        return synVar;
+    }
+    public void setSynVar(HashMap<String, HashMap<String, LinkedList<String>>> synVar) {
+        this.synVar = synVar;
+    }
+
+    public HashMap<State, HashMap<String, State>> getActGoToTable() {
+        return actGoToTable;
+    }
+    public HashMap<String, State> getItList() {
+        return itList;
+    }
+    public HashMap<String, HashSet<String>> getFollowMap() {
+        return followMap;
+    }
+
     //存储语法变量的Map
     HashMap<String, HashMap<String,LinkedList<String>>> synVar = new HashMap<>();
     //状态存储链表
@@ -57,33 +91,28 @@ public class ParseGrammar
     //经过统一规格之后的itemState表
     HashMap<String,State> itList = new HashMap<>();
 
-    @Test
-    public void test() throws IOException
-    {
-        //文法经过处理之后，形成了一个三级链表
-        this.parse(synVar);
-        //接下来要通过查表的方式来构建状态转换图
-        //生成状态转换表
-        this.stateTransition();
-        this.firstCollection();
-        this.followCollection();
-        this.createActionGoToTable();
-    }
 
     //处理文法
-    public void parse(HashMap<String, HashMap<String,LinkedList<String>>> hashMap) throws IOException
+    public void parse()
     {
-        //从文件中读取数据
-        FileInputStream fis = new FileInputStream("F:\\Java\\Compilers\\src\\grammar");
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        int read = 0;
-        byte[] buffer = new byte[5];
-        while((read = fis.read(buffer)) != -1)
+        String string = null;
+        try
         {
-            baos.write(buffer,0,read);
+            //从文件中读取数据
+            FileInputStream fis = new FileInputStream("F:\\Java\\Compilers\\src\\grammar");
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            int read = 0;
+            byte[] buffer = new byte[5];
+            while((read = fis.read(buffer)) != -1)
+            {
+                baos.write(buffer,0,read);
+            }
+            //导出字符串
+            string = baos.toString();
+        } catch (IOException e)
+        {
+            e.printStackTrace();
         }
-        //导出字符串
-        String string = baos.toString();
 
         //以"\r\n"为界限进行划分
         String[] split = string.split("\r\n");
@@ -95,7 +124,7 @@ public class ParseGrammar
             //取出首元素
             String s1 = split1[0];
             //在HashMap中查询是否有该元素存在
-            boolean b = hashMap.containsKey(s1);
+            boolean b = synVar.containsKey(s1);
 
             //辅助优化变量 -> 两种情况存在大量重复的代码，故进行优化
             HashMap<String,LinkedList<String>> map = null;
@@ -105,13 +134,13 @@ public class ParseGrammar
                 //创建生成链表
                  map = new HashMap<>();
                 //将该元素加其中
-                hashMap.put(s1,map);
+                synVar.put(s1,map);
 
             }
             else
             {
                 //倘若有该元素存在，则将产生式加入其生成链表之中
-                map = hashMap.get(s1);
+                map = synVar.get(s1);
             }
 
             //接下来对产生式进行分析
@@ -949,6 +978,7 @@ public class ParseGrammar
         System.out.println();
 
     }
+
 }
 
 

@@ -216,4 +216,20 @@ public class Test01
             System.out.println(key+value);
         });
     }
+
+    @Test   //针对词法分析器、语法分析器的测试
+    public void test14()
+    {
+        LexicalAnalyzer analyzer = new LexicalAnalyzer();
+        analyzer.analysis();
+        analyzer.createTable();
+
+        ParseGrammar parseGrammar = new ParseGrammar();
+        parseGrammar.parse();
+        parseGrammar.stateTransition();
+        parseGrammar.firstCollection();
+        parseGrammar.followCollection();
+        parseGrammar.createActionGoToTable();
+    }
+
 }

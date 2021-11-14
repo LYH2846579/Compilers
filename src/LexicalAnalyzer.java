@@ -17,29 +17,32 @@ public class LexicalAnalyzer
     @Test
     public void test() throws IOException
     {
-        LinkedList<Word> analysis = analysis();
-        HashMap<String, TableNode> table = createTable(analysis);
-        analysis.forEach(word -> {
-            System.out.println(word);
-        });
+        //词法分析器
+        analysis = analysis();
+        //生成符号表
+        table = createTable();
+        //编码
+        this.analysisDeal();
+
+
         //for(Word word:analysis)
         //    System.out.println(word);
-        Set<Map.Entry<String, TableNode>> entries = table.entrySet();
-        System.out.println("===================================");
-        //输出符号表 -> 上迭代器
-        Iterator<Map.Entry<String, TableNode>> iterator = entries.iterator();
-        while(iterator.hasNext())
-        {
-            Map.Entry<String, TableNode> next = iterator.next();
-            String name = next.getKey();
-            TableNode value = next.getValue();
-            System.out.println(name+" "+value);
-        }
+        this.printAnalysis();
+        this.printTable();
     }
 
+    private LinkedList<Word> analysis;
+    private HashMap<String, TableNode> table;
+
+    public LinkedList<Word> getAnalysis() {
+        return analysis;
+    }
+    public HashMap<String, TableNode> getTable() {
+        return table;
+    }
 
     //实现词法分析
-    public LinkedList<Word> analysis() throws IOException
+    public LinkedList<Word> analysis()
     {
         LinkedList<Word> list = new LinkedList<>();
 
@@ -48,13 +51,20 @@ public class LexicalAnalyzer
 
         //载入数据
         /**/
-        FileInputStream fis = new FileInputStream("F:\\Java\\Compilers\\src\\Hello.txt");
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        int read = 0;
-        byte[] buffer = new byte[5];
-        while((read = fis.read(buffer)) != -1)
+        ByteArrayOutputStream baos = null;
+        try
         {
-            baos.write(buffer,0,read);
+            FileInputStream fis = new FileInputStream("F:\\Java\\Compilers\\src\\Hello.txt");
+            baos = new ByteArrayOutputStream();
+            int read = 0;
+            byte[] buffer = new byte[5];
+            while((read = fis.read(buffer)) != -1)
+            {
+                baos.write(buffer,0,read);
+            }
+        } catch (IOException e)
+        {
+            e.printStackTrace();
         }
 
 
@@ -229,6 +239,9 @@ public class LexicalAnalyzer
         //加入终结符号
         list.add(new Word("KeyWord","$","$"));
 
+        //修改属性值 -> 方便外部调用
+        this.analysis = list;
+
         return list;
     }
 
@@ -267,8 +280,9 @@ public class LexicalAnalyzer
     }
 
     //创建符号表 -> 这里其实采用的是自底向上的分析方式来创建符号表  "KL:" -> Node
-    public HashMap<String,TableNode> createTable(LinkedList<Word> list)
+    public HashMap<String,TableNode> createTable()
     {
+        LinkedList<Word> list = analysis;
         //创建符号表 -> 不允许重复定义
         HashMap<String,TableNode> ihashMap = new HashMap<>();
         //创建一个删除列表
@@ -372,8 +386,88 @@ public class LexicalAnalyzer
             list.remove(pop+1);
         }
 
-
+        //修改属性值 -> 方便外部调用
+        this.table = ihashMap;
 
         return ihashMap;
     }
+
+
+    //一些提供与外部调用的输出方法
+    public void printAnalysis()
+    {
+        analysis.forEach(word -> {
+            System.out.println(word);
+        });
+    }
+    public void printTable()
+    {
+        Set<Map.Entry<String, TableNode>> entries = table.entrySet();
+        System.out.println("===================================");
+        //输出符号表 -> 上迭代器
+        Iterator<Map.Entry<String, TableNode>> iterator = entries.iterator();
+        while(iterator.hasNext())
+        {
+            Map.Entry<String, TableNode> next = iterator.next();
+            String name = next.getKey();
+            TableNode value = next.getValue();
+            System.out.println(name+" "+value);
+        }
+    }
+
+    //为了使得词法分析与语法分析结合的更加紧密 -> 这里对词法分析的结果执行编码操作
+    //不妨直接在value之中放置其编码之后的结果!
+    public void analysisDeal()
+    {
+        LinkedList<Word> analysis = this.getAnalysis();
+        for (int i = 0; i < analysis.size(); i++)
+        {
+            //若为字母 -> 编码为l
+            if(analysis.get(i).getType().equals("letter"))
+                analysis.get(i).setValue("d");  //文法中标识符为id
+            else if(analysis.get(i).getType().equals("digit"))
+                analysis.get(i).setValue("g");
+            else if(analysis.get(i).getType().equals("OP"))
+                analysis.get(i).setValue(analysis.get(i).getName());
+            else if(analysis.get(i).getType().equals("BinOP"))
+                analysis.get(i).setValue("&");      //目前只能处理==.若想引入更多变量，需要再进行编码!
+            else if(analysis.get(i).getType().equals("KeyWord"))
+            {
+                //针对关键字的特殊分析
+                if(analysis.get(i).getName().equals("while"))
+                    analysis.get(i).setValue("w");
+                else if(analysis.get(i).getName().equals("else"))
+                    analysis.get(i).setValue("e");
+                else if(analysis.get(i).getName().equals("if"))
+                    analysis.get(i).setValue("f");
+            }
+        }
+    }
 }
+
+
+/*
+a >= b;
+c = 5;
+int a;
+float b1b;
+int c;
+int e;
+
+a = 2;
+b = 1.1;
+if ( a > b )
+c = a + b;
+else
+c = a - b;
+while ( a < b )
+
+int d;
+if ( d >= a )
+    d = a;
+else
+    d = b;
+
+if ( d == a )
+    d = a;
+ */
