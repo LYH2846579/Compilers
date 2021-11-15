@@ -178,7 +178,7 @@ public class ParseGrammar
         //加入终止符号
         symList.add("$");
 
-        System.out.println();
+        //System.out.println();
     }
 
     //构建状态转换图
@@ -241,8 +241,8 @@ public class ParseGrammar
             }
         }
 
-        System.out.println();
-        System.out.println();
+        //System.out.println();
+        //System.out.println();
         //首先将首状态加入到statelist之中
         this.stateList.offerLast(state);
         //接下来将state加入到未处理的链表之中
@@ -341,8 +341,8 @@ public class ParseGrammar
                 }
             });
 
-            System.out.println();
-            System.out.println();
+            //System.out.println();
+            //System.out.println();
 
             //对Str中的字符串分析结束之后得到templist中的各项
             //接下来要对每一项进行分析，整理成为state的格式并将其加入到undisposedStateList之中
@@ -455,9 +455,9 @@ public class ParseGrammar
                         this.itemState.put(s4,state2);
                     }
 
-                    System.out.println();
-                    System.out.println();
-                    System.out.println();
+                    //System.out.println();
+                    //System.out.println();
+                    //System.out.println();
 
                     //将这个新的状态加入到待处理队列之中  -> 而不是什么都加
                     undisposedStateList.offerLast(state2);
@@ -493,8 +493,8 @@ public class ParseGrammar
             });
 
 
-            System.out.println();
-            System.out.println();
+            //System.out.println();
+            //System.out.println();
         }
 
         //现在已经可以正常生成11个状态!  ->  可是存在格式上一些丑陋的地方
@@ -524,9 +524,9 @@ public class ParseGrammar
             state1.setStr(newStr);
         }
 
-        System.out.println();
-        System.out.println();
-        System.out.println();
+        //System.out.println();
+        //System.out.println();
+        //System.out.println();
     }
 
     //求解语法变量的first集
@@ -676,9 +676,9 @@ public class ParseGrammar
             });
         }
 
-        System.out.println();
-        System.out.println();
-        System.out.println();
+        //System.out.println();
+        //System.out.println();
+        //System.out.println();
     }
 
     //推导follow集
@@ -871,8 +871,8 @@ public class ParseGrammar
             });
         }
 
-        System.out.println();
-        System.out.println();
+        //System.out.println();
+        //System.out.println();
 
         //结束之后要处理更新的follow集!
         while(true)
@@ -900,9 +900,9 @@ public class ParseGrammar
             }
         }
 
-        System.out.println();
-        System.out.println();
-        System.out.println();
+        //System.out.println();
+        //System.out.println();
+        //System.out.println();
 
     }
 
@@ -973,9 +973,9 @@ public class ParseGrammar
         });
 
 
-        System.out.println();
-        System.out.println();
-        System.out.println();
+        //System.out.println();
+        //System.out.println();
+        //System.out.println();
 
     }
 

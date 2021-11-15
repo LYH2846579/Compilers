@@ -471,3 +471,27 @@ else
 if ( d == a )
     d = a;
  */
+
+/*
+int a;
+float b1b;
+int c;
+int e;
+
+a = 2;
+b = 1.1;
+if ( a > b )
+c = a + b;
+else
+c = a - b;
+while ( a < b )
+
+int d;
+if ( d >= a )
+    d = a;
+else
+    d = b;
+
+if ( d == a )
+    d = a;
+ */

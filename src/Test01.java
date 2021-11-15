@@ -8,6 +8,7 @@ import java.time.temporal.ValueRange;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -230,6 +231,35 @@ public class Test01
         parseGrammar.firstCollection();
         parseGrammar.followCollection();
         parseGrammar.createActionGoToTable();
+    }
+
+    @Test
+    public void test15()
+    {
+        Stack<String> stack = new Stack<>();
+        stack.push("P");
+        stack.push("F");
+        stack.push("G");
+
+        String temp = "";
+        for(String s:stack)
+        {
+            temp += s;
+        }
+
+        temp += stack.get(0);
+
+
+        //顺序输出
+        System.out.println(temp);
+
+    }
+
+    @Test   //词法分析调试
+    public void test16()
+    {
+        AnalysisInput analysisInput = new AnalysisInput();
+        analysisInput.inputAnalysis();
     }
 
 }
