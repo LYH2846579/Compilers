@@ -221,7 +221,19 @@ public class AnalysisInput
                     for(String s:strings)
                     {
                         if(s.equals(word.getValue()))
+                        {
                             flag = true;
+
+                            //针对于if - else的特殊处理 ->  ※
+                            if(find.equals("S→f(C)S.") && word.getValue().equals("e"))
+                            {
+                                flag = false;
+                                break;
+                            }
+
+                            break;
+                        }
+
                     }
                     //遍历之后分析flag的情况
                     if(flag)

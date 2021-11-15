@@ -495,3 +495,13 @@ else
 if ( d == a )
     d = a;
  */
+
+/*
+int a;
+int b;
+a = 5;
+while ( a < b )
+    a = 1;
+if ( a ==  b )
+    b = a * b;
+ */
