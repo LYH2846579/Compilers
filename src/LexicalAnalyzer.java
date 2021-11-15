@@ -75,6 +75,7 @@ public class LexicalAnalyzer
         string = string.replaceAll("\n|\r"," ");
 
         System.out.println(string);
+        System.out.println("=========================================");
 
 
         //String string = "int abc = 100;";
@@ -504,4 +505,43 @@ while ( a < b )
     a = 1;
 if ( a ==  b )
     b = a * b;
+ */
+
+
+/*
+b = a % b;
+
+int a;
+int b;
+int c;
+
+
+if ( a == b )
+    b = a * b;
+else
+    a = b * a;
+
+a = 0;
+b = 2;
+
+while ( a < 3 )
+    if ( a < b )
+        a = a + b;
+    else
+        a = a - b;
+
+while ( a > b )
+    a = b;
+
+a = b + a;
+
+c = a / b;
+
+c = c + 1;
+
+c = c * 3;
+
+if ( c < b )
+    c = c + c;
+
  */

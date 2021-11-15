@@ -1,35 +1,29 @@
-b = a % b;
-
 int a;
 int b;
 int c;
 
+a = 2;
+b = 3;
+c = 5;
 
-if ( a == b )
-    b = a * b;
+a = b + c;
+
+if ( a > c )
+    c = a;
 else
-    a = b * a;
+    a = c;
 
-a = 0;
-b = 2;
-
-while ( a < 3 )
-    if ( a < b )
-        a = a + b;
-    else
-        a = a - b;
-
-while ( a > b )
-    a = b;
-
-a = b + a;
-
-c = a / b;
-
-c = c + 1;
-
-c = c * 3;
+while ( b > 0 )
+    a = a + 1;
 
 if ( c < b )
-    c = c + c;
+    while ( b < 6 )
+        b =  b + 1;
+else
+    c = c + 1;
 
+while ( a > b )
+    if ( a > c )
+        a = c;
+    else
+        b = c;

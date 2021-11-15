@@ -262,4 +262,17 @@ public class Test01
         analysisInput.inputAnalysis();
     }
 
+
+    @Test
+    public void test17()
+    {
+        AnalysisInput analysisInput = new AnalysisInput();
+        boolean r = analysisInput.inputAnalysis();
+        System.out.println("=========================================");
+        if(r)
+        {
+            //进行语义处理...
+        }
+    }
+
 }
