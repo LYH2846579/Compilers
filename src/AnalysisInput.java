@@ -13,8 +13,9 @@ import java.util.Stack;
  */
 public class AnalysisInput
 {
+    //一些私有属性 -> 保证在语法分析之后还可以被语义处理及中间代码生成所调用
     private LexicalAnalyzer analyzer;
-    private ParseGrammar grammar;
+    private ParseGrammar parseGrammar;
 
     //存储当前状态的栈
     private Stack<State> stateStack = new Stack<>();
@@ -24,12 +25,18 @@ public class AnalysisInput
     //维护一个字符串用于记录符号栈中对应的字符序列
     private String symStr = new String();
 
+    //Error标识
+    private int ErrorTag = -1;
+
+    //备份一份输入Token序列供给语义处理使用
+    private LinkedList<Word> tempList = new LinkedList<>();
+
 
     public AnalysisInput() {
     }
-    public AnalysisInput(LexicalAnalyzer analyzer, ParseGrammar grammar) {
+    public AnalysisInput(LexicalAnalyzer analyzer, ParseGrammar parseGrammar) {
         this.analyzer = analyzer;
-        this.grammar = grammar;
+        this.parseGrammar = parseGrammar;
     }
 
     //进入输入分析阶段
@@ -38,19 +45,24 @@ public class AnalysisInput
         try
         {
             //词法分析预处理
-            LexicalAnalyzer analyzer = new LexicalAnalyzer();
+            analyzer = new LexicalAnalyzer();
             analyzer.analysis();
             analyzer.createTable();
             //编码
             analyzer.analysisDeal();
 
             //语法分析预处理
-            ParseGrammar parseGrammar = new ParseGrammar();
+            parseGrammar = new ParseGrammar();
             parseGrammar.parse();
             parseGrammar.stateTransition();
             parseGrammar.firstCollection();
             parseGrammar.followCollection();
             parseGrammar.createActionGoToTable();
+
+            //为备份的链表赋值 -> 便于语义处理
+            analyzer.getAnalysis().forEach(word -> {
+                tempList.offerLast(word);
+            });
 
             //获取Token表
             LinkedList<Word> analysis = analyzer.getAnalysis();
@@ -84,6 +96,7 @@ public class AnalysisInput
                             System.out.println("Accept!");
                             //退出循环
                             //break;
+                            this.ErrorTag = 0;
                             return true;
                         }
     //                    else
@@ -353,9 +366,24 @@ public class AnalysisInput
             //e.printStackTrace();
             System.out.println("Syntax Errors!");
         }
-        finally
         {
-            return false;
+            if(this.ErrorTag == 0)
+                return true;
+            else
+                return false;
         }
+    }
+
+
+    //进行语义处理及中间代码生成
+    public void semantic_Analysis()
+    {
+        //获取输入的Token队列
+        System.out.println(tempList.size());
+        //获取符号表 -> 此时声明语句及符号表都已经建立起来
+        HashMap<String, TableNode> table = analyzer.getTable();
+
+
+
     }
 }

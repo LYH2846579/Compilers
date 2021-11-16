@@ -12,7 +12,11 @@ import java.util.regex.Pattern;
  * @create 2021-11-09 15:23
  *
  * 针对给定的文法产生式进行解析
- * 首先生成状态转换图
+ * 首先生成状态转换图 ->　输入校验
+ *
+ * 不妨就将语义处理及中间代码生成就在语法分析中给做了!
+ *
+ * -> 定义在AnalysisInput之中
  */
 public class ParseGrammar
 {
@@ -1050,3 +1054,5 @@ F → ( E )
 F → d
 F → g
  */
+
+

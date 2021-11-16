@@ -545,3 +545,55 @@ if ( c < b )
     c = c + c;
 
  */
+
+
+
+
+/*
+复杂性测试
+
+int a;
+int b;
+int c;
+
+a = 2;
+b = 3;
+c = 5;
+
+a = b + c;
+
+if ( a > c )
+    c = a;
+else
+    a = c;
+
+while ( b > 0 )
+    a = a + 1;
+
+
+if ( c < b )
+    while ( b < 6 )
+        b =  b + 1;
+        if ( c == 2 )
+            c = c + 1;
+        else
+            c = c + 2;
+else
+    if ( c == 2 )
+                c = c + 1;
+            else
+                c = c + 2;
+
+if ( c > b )
+    c = b;
+if ( c > a )
+    c = a;
+
+
+while ( a > b )
+    if ( a > c )
+        a = c;
+    else
+        b = c;
+
+ */

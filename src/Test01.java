@@ -271,7 +271,12 @@ public class Test01
         System.out.println("=========================================");
         if(r)
         {
-            //进行语义处理...
+            //进行语义处理...  --> 整成三地址代码的形式!
+            analysisInput.semantic_Analysis();
+        }
+        else
+        {
+            System.exit(0);
         }
     }
 
