@@ -597,3 +597,35 @@ while ( a > b )
         b = c;
 
  */
+
+/*      //语法上暂时未发现问题!
+if ( c < b )
+    while ( b < 6 )
+        b =  b + 1;
+
+        if ( c == 2 )
+            c = c + 1;
+        else
+            c = c + 2;
+else
+    if ( c == 2 )
+                c = c + 1;
+            else
+                c = c + 2;
+
+while ( b < 6 )
+        if ( c == 2 )
+            c = c + 1;
+        if ( c == 1 )
+            c = 0;
+if ( c == 1 )
+    c = 0;
+
+
+
+if ( c == 2 )
+    c = c + 1;
+
+if ( c == 1 )
+    c = 0;
+ */

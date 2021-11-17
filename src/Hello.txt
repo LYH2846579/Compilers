@@ -1,9 +1,14 @@
-a = b + c;
+int a;
+int b;
 
-if ( a > c )
-    c = a;
+a = 0;
+b = 2;
+
+a = a + 1;
+b = b - 1;
+
+if ( a == b )
+    b = a * b;
 else
-    a = c;
+    a = b * a;
 
-while ( b > 0 )
-    a = a + 1;

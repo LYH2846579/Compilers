@@ -1035,8 +1035,10 @@ F → t
 
 
 /*
+稍作修改S → d = E; S
 P → S
-S → d = E;
+S → d = E ;
+S → d = E ; S
 S → f ( C ) S
 S → f ( C ) S e S
 S → w ( C ) S
