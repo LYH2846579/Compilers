@@ -1,9 +1,8 @@
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Stack;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author LYHstart
@@ -19,8 +18,17 @@ public class AnalysisInput
 
     //存储当前状态的栈
     private Stack<State> stateStack = new Stack<>();
-    //存储符号的栈
-    private Stack<String> symStack = new Stack<>();
+    //存储符号的栈 -> 将栈结构改了!  --> 预计全场爆红  --> 由Symbol类对象代替原来的String
+    private Stack<Symbol> symStack = new Stack<>();
+    //用于存储语义处理过程之中出现的三地址代码
+    private ArrayList<String> addressCodeList = new ArrayList<>();
+    //用于存储已经扫描过的Token序列
+    private Stack<Word> wordStack = new Stack<>();
+    //用以产生序号的变量
+    private int label = 0;
+    //用于产生行号的变量
+    private int tag = 0;
+
 
     //维护一个字符串用于记录符号栈中对应的字符序列
     private String symStr = new String();
@@ -91,7 +99,7 @@ public class AnalysisInput
                     if(stateStack.peek().getName().equals("I0"))
                     {
                         //判断符号栈 ->　是否规约出来文法的开始符号
-                        if(symStack.peek().equals("P"))
+                        if(symStack.peek().getName().equals("P"))
                         {
                             System.out.println("Accept!");
                             //退出循环
@@ -115,8 +123,26 @@ public class AnalysisInput
                 {
                     //从输入序列中取出首元素
                     Word word = analysis.pollFirst();
+
+                    //创建一个新的Symbol类对象
+                    Symbol symbol = new Symbol(word.getValue());
+
+                    //这里需要判断一下word的类型 -> Info.txt
+                    //倘若为字符类型或者为数字类型
+                    if(word.getType().equals("letter") || word.getType().equals("digit"))
+                    {
+                        //需将其值加入到对应的code属性之中
+                        symbol.setCode(word.getName());
+                    }
+
+                    //将取出的word压入栈中
+                    wordStack.push(word);
+
+
                     //将其加入到符号栈中
-                    symStack.push(word.getValue());
+                    symStack.push(symbol);
+
+
                     //同时修改字符串
                     symStr += word.getValue();
 
@@ -174,7 +200,7 @@ public class AnalysisInput
                     //取出对应的字符串
                     for (int j = index; j < symStack.size(); j++)
                     {
-                        temp += symStack.get(j);
+                        temp += symStack.get(j).getName();
                     }
                     temp += ".";
 
@@ -236,6 +262,13 @@ public class AnalysisInput
                         HashSet<String> strings = followMap.get(var);
                         for(String s:strings)
                         {
+                            //针对于赋值语句的特殊处理 -> 赋值语句与if-else的隔离
+                            /*if(find.equals("S→d=E;.") && word.getValue().equals("d"))
+                            {
+                                flag = true;        //要让他规约!
+                                break;
+                            }*/
+
                             if(s.equals(word.getValue()))
                             {
                                 flag = true;
@@ -274,6 +307,16 @@ public class AnalysisInput
                             //当然要出去.的影响
                             s2 = s2.replaceAll("\\.","");
                             byte[] bytes = s2.getBytes();
+
+                            //生成要规约为的符号
+                            Symbol symbol = new Symbol(s1);
+
+                            //在规约状态下，应当生成三地址代码!
+                            this.createThreeAddressCode(find,symbol,wordStack,symStack);
+
+
+
+
                             for (int i = 0; i < bytes.length; i++)
                             {
                                 //弹出对应的符号
@@ -281,8 +324,10 @@ public class AnalysisInput
                                 //同时弹出对应的状态
                                 stateStack.pop();
                             }
-                            //将被规约的符号加入
-                            symStack.push(s1);
+                            //将被规约的符号加入  -> 压入Symbol类对象
+                            symStack.push(symbol);
+
+
                             //分析从该状态加入s1到达的状态!
                             state = stateStack.peek();
                             actGoTo = actGoToTable.get(state);
@@ -294,9 +339,9 @@ public class AnalysisInput
                                 stateStack.push(state2);
                                 //修该对应的symStr
                                 symStr = "";
-                                for(String s:symStack)
+                                for(Symbol s:symStack)
                                 {
-                                    symStr += s;
+                                    symStr += s.getName();
                                 }
                                 //接下来进入下一轮分析
                             }
@@ -314,7 +359,23 @@ public class AnalysisInput
                                 word1 = analysis.get(0);
                             }*/
 
-                            symStack.push(word1.getValue());
+
+
+                            //要不然就在这个地方加入一个单独处理赋值语句的算法
+                            if(find.equals("S→d=E;."))
+                            {
+                                //将赋值语句加入三地址代码存储链表
+                                addressCodeList.add("L"+ tag++ +": "+symStack.get(symStack.size()-4).getCode()+" = "+ symStack.get(symStack.size()-2).getCode());
+                            }
+
+
+                            //创建对象
+                            Symbol symbol = new Symbol(word1.getValue());
+                            if(word1.getType().equals("letter") || word1.getType().equals("digit"))
+                                symbol.setCode(word1.getName());
+
+                            //压入对象
+                            symStack.push(symbol);
                             symStr += word1.getValue();
                             //移入之后状态发生变化 -> 不加入? --> 还是得加入
                             State peek1 = stateStack.peek();
@@ -323,6 +384,10 @@ public class AnalysisInput
                             State state2 = map.get(word1.getValue());
                             ///将state2压栈
                             stateStack.push(state2);
+
+
+                            //将取出的word压入栈中
+                            wordStack.push(word1);
                         }
                     }
                     //else
@@ -348,7 +413,12 @@ public class AnalysisInput
                             word1 = analysis.get(0);
                         }*/
 
-                        symStack.push(word1.getValue());
+                        //创建并压入对象
+                        Symbol symbol = new Symbol(word1.getValue());
+                        if(word1.getType().equals("letter") || word1.getType().equals("digit"))
+                            symbol.setCode(word1.getName());
+
+                        symStack.push(symbol);
                         symStr += word1.getValue();
                         //移入之后状态发生变化 -> 不加入? --> 还是得加入
                         State peek1 = stateStack.peek();
@@ -357,6 +427,9 @@ public class AnalysisInput
                         State state2 = map.get(word1.getValue());
                         ///将state2压栈
                         stateStack.push(state2);
+
+                        //将取出的word压入栈中
+                        wordStack.push(word1);
                     }
                 }
 
@@ -375,7 +448,227 @@ public class AnalysisInput
     }
 
 
-    //进行语义处理及中间代码生成
+    //加入一个三地址代码生成方法 -> 将表达式和符号栈,还必须有要规约为的符号! 传入进去
+    //即将表达式与Token符号栈传入
+    public void createThreeAddressCode(String exp,Symbol symbol,Stack<Word> wordStack,Stack<Symbol> symStack)
+    {
+        String temp = "";
+        String value1 = "";
+        String value2 = "";
+        String group = "";
+        String group1 = "";
+        //首选分析表达式的类型 ->　直接上switch-case可否?
+        switch (exp)
+        {
+            case "F→d.":
+                //若为F -> d
+                symbol.setCode(wordStack.peek().getName());
+                break;
+            case "F→g.":
+                //若为F -> g
+                symbol.setCode(wordStack.peek().getName());
+                break;
+            case "T→F.":
+                //若为T -> F
+                symbol.setCode(symStack.peek().getCode());
+                break;
+            case "E→T.":
+                //若为E -> T
+                symbol.setCode(symStack.peek().getCode());
+                break;
+            case "E→E+T.":
+                //若为E -> E + T
+                symbol.setCode("T"+label++);
+                //此时初始位置定位: 需判断E和T之中是否含有value属性
+                temp = "L"+ tag++ +": "+symbol.getCode()+" = "+symStack.get(symStack.size()-3).getCode()+" + "+symStack.peek().getCode();
+                //判断是否存在更前的位置信息
+                value1 = symStack.get(symStack.size() - 3).getValue();
+                value2 = symStack.peek().getValue();
+                if(value1 != null && value2 != null)
+                {
+                    //若两者都不为null -> 判断谁的位置更低
+                    Matcher matcher1 = Pattern.compile("L.").matcher(value1);
+                    if(matcher1.find())
+                        group = matcher1.group(0);
+                    Matcher matcher2 = Pattern.compile("L.").matcher(value2);
+                    if(matcher2.find())
+                        group1 = matcher2.group(0);
+                    int i = Integer.parseInt(group);
+                    int i1 = Integer.parseInt(group1);
+                    //判断谁更低 -> 取最小者
+                    if(i < i1)
+                    {
+                        symbol.setValue(value1);
+                    }
+                    else
+                        symbol.setValue(value2);
+                }
+                else if(value1 == null && value2 == null)   //若都为空
+                {
+                    symbol.setValue(temp);      //直接设置为此条
+                }
+                else
+                {
+                    //若只有一个为空   -> 判断一下
+                    if(value1 == null)
+                        symbol.setValue(value2);
+                    else
+                        symbol.setValue(value1);
+                }
+                addressCodeList.add(temp);
+                break;
+            case "E→E-T.":
+                //若为E -> E + T
+                symbol.setCode("T"+label++);
+                //此时初始位置定位: 需判断E和T之中是否含有value属性
+                temp = "L"+ tag++ +": "+symbol.getCode()+" = "+symStack.get(symStack.size()-3).getCode()+" - "+symStack.peek().getCode();
+                //判断是否存在更前的位置信息
+                value1 = symStack.get(symStack.size() - 3).getValue();
+                value2 = symStack.peek().getValue();
+                if(value1 != null && value2 != null)
+                {
+                    //若两者都不为null -> 判断谁的位置更低
+                    Matcher matcher1 = Pattern.compile("L.").matcher(value1);
+                    if(matcher1.find())
+                        group = matcher1.group(0);
+                    Matcher matcher2 = Pattern.compile("L.").matcher(value2);
+                    if(matcher2.find())
+                        group1 = matcher2.group(0);
+
+                    int j;  //别给我重复提醒!!!!!
+
+
+                    int i = Integer.parseInt(group);
+                    int i1 = Integer.parseInt(group1);
+                    //判断谁更低 -> 取最小者
+                    if(i < i1)
+                    {
+                        symbol.setValue(value1);
+                    }
+                    else
+                        symbol.setValue(value2);
+                }
+                else if(value1 == null && value2 == null)   //若都为空
+                {
+                    symbol.setValue(temp);      //直接设置为此条
+                }
+                else
+                {
+                    //若只有一个为空   -> 判断一下
+                    if(value1 == null)
+                        symbol.setValue(value2);
+                    else
+                        symbol.setValue(value1);
+                }
+                addressCodeList.add(temp);
+                break;
+            case "T→T*F.":
+                //若为T -> T * F
+                symbol.setCode("T"+label++);
+                //记录开始地点
+                temp = "L"+ tag++ +": "+symbol.getCode()+" = "+symStack.get(symStack.size()-3).getCode()+" * "+symStack.peek().getCode();
+                symbol.setValue(temp);
+                addressCodeList.add(temp);
+                break;
+            case "T→T/F.":
+                //若为T -> T / F
+                symbol.setCode("T"+label++);
+                //记录开始地点
+                temp = "L"+ tag++ +": "+symbol.getCode()+" = "+symStack.get(symStack.size()-3).getCode()+" * "+symStack.peek().getCode();
+                symbol.setValue(temp);
+                addressCodeList.add(temp);
+                break;
+            case "S→d=E;.":
+                temp = "L"+ tag++ +": "+symStack.get(symStack.size()-4).getCode()+" = "+ symStack.get(symStack.size()-2).getCode();
+                addressCodeList.add(temp);
+                //规约的时候也要判断
+                if(symStack.get(symStack.size()-2).getValue() != null)
+                    symbol.setValue(symStack.get(symStack.size()-2).getValue());
+                else
+                    symbol.setValue(temp);
+                break;
+            case "C→E>E.":
+                symbol.setCode("T"+label++);
+                addressCodeList.add("L"+ tag++ +": "+symbol.getCode()+" = "+symStack.get(symStack.size()-3).getCode()+" > "+symStack.peek().getCode());
+                //布尔表达式需要记录一下该值
+                //占位 -> 等待回填
+                addressCodeList.add("L"+ tag++ +": ");
+                //记录tag
+                symbol.setTagIndex(tag-1);      //减一才是空位置!
+
+                break;
+            case "C→E<E.":
+                symbol.setCode("T"+label++);
+                addressCodeList.add("L"+ tag++ +": "+symbol.getCode()+" = "+symStack.get(symStack.size()-3).getCode()+" < "+symStack.peek().getCode());
+                //布尔表达式需要记录一下该值
+                //占位 -> 等待回填
+                addressCodeList.add("L"+ tag++ +": ");
+                //记录tag
+                symbol.setTagIndex(tag-1);
+                break;
+            case "C→E&E.":
+                symbol.setCode("T"+label++);
+                addressCodeList.add("L"+ tag++ +": "+symbol.getCode()+" = "+symStack.get(symStack.size()-3).getCode()+" == "+symStack.peek().getCode());
+                //布尔表达式需要记录一下该值
+                //占位 -> 等待回填
+                addressCodeList.add("L"+ tag++ +": ");
+                //记录tag
+                symbol.setTagIndex(tag-1);
+                break;
+            case "S→f(C)S.":
+                //针对于if语句的规约
+                //首先创建一个跳转到下下条语句的跳转语句
+                addressCodeList.add("L"+ tag++ +": "+"goto "+(tag+2));
+
+                //从S中获取其首代码地址  -> 可能为多位数!   //L10: a = c
+                Matcher matcher = Pattern.compile("L\\d{1,4}").matcher(symStack.peek().getValue());
+                if(matcher.find())
+                {
+                    group = matcher.group(0);
+                }
+                String temp1 = "L"+ tag++ +": "+ "if(" + symStack.get(symStack.size()-3).getCode()+") goto "+ group;
+                symbol.setValue(symStack.peek().getValue());
+                addressCodeList.add(temp1);
+
+                //接下来对原来空位置进行回填
+                //首先找到原来的位置
+                int tagIndex = symStack.get(symStack.size() - 3).getTagIndex();
+                //从三地址代码序列中寻找合适的语句
+                int index = 0;
+                for (int i = 0; i < addressCodeList.size(); i++)
+                {
+                    String s = addressCodeList.get(i);
+                    Matcher matcher1 = Pattern.compile("L" + tagIndex + ": ").matcher(s);
+                    if(matcher1.find())
+                    {
+                        //应当进行替换！
+                        addressCodeList.remove(s);
+                        index = i;
+                        break;
+                    }
+                }
+                //将原句子替换
+                addressCodeList.add(index,"L"+tagIndex+": goto "+"L"+(tag-1));
+
+
+                break;
+            //symbol.setName(symStack.get(symStack.size()-3).getName());
+            default:
+                break;
+        }
+
+    }
+
+
+
+
+
+
+
+
+
+
+    //进行语义处理及中间代码生成 -> 还是在语法分析的过程之中将语义处理加入其中
     public void semantic_Analysis()
     {
         //获取输入的Token队列
@@ -385,5 +678,15 @@ public class AnalysisInput
 
 
 
+    }
+
+
+    //getter & setter
+    public ArrayList<String> getAddressCodeList() {
+        return addressCodeList;
+    }
+
+    public void setAddressCodeList(ArrayList<String> addressCodeList) {
+        this.addressCodeList = addressCodeList;
     }
 }

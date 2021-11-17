@@ -272,7 +272,12 @@ public class Test01
         if(r)
         {
             //进行语义处理...  --> 整成三地址代码的形式!
-            analysisInput.semantic_Analysis();
+            //analysisInput.semantic_Analysis();
+
+            //打印生成的三地址代码
+            analysisInput.getAddressCodeList().forEach(s -> {
+                System.out.println(s);
+            });
         }
         else
         {
@@ -280,4 +285,28 @@ public class Test01
         }
     }
 
+    @Test   //Stack的get()方法测试
+    public void test18()
+    {
+        Stack<String> stack = new Stack<>();
+        stack.push("1");
+        stack.push("2");
+        stack.push("3");
+        stack.push("4");
+
+        System.out.println(stack.get(stack.size()-2));
+    }
+
+    @Test       //正则测试
+    public void test19()
+    {
+        String s = "L10: a = c";
+        Matcher matcher = Pattern.compile("L.{1,4}:").matcher(s);
+        if(matcher.find())  //必须find！
+        {
+            System.out.println(matcher.group(0));
+        }
+        //String group = Pattern.compile("L..:").matcher(s).group(0);
+        //System.out.println(group);
+    }
 }
