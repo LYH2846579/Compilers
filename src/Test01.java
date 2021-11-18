@@ -278,6 +278,11 @@ public class Test01
             analysisInput.getAddressCodeList().forEach(s -> {
                 System.out.println(s);
             });
+            System.out.println("========================");
+            System.out.println("符号表内容如下:");
+
+            //HashMap<String, TableNode> table = analysisInput.getAnalyzer().getTable();
+            analysisInput.getAnalyzer().printTable();
         }
         else
         {

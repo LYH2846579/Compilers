@@ -15,6 +15,8 @@ public class Symbol
     //记录两个跳转地址
     private String trueAdd;
     private String falseAdd;
+    //存储跳转语句!
+    private String key;
 
     //用于控制流语句的信息
     private int tagIndex;
@@ -66,5 +68,11 @@ public class Symbol
     }
     public void setTagIndex(int tagIndex) {
         this.tagIndex = tagIndex;
+    }
+    public String getKey() {
+        return key;
+    }
+    public void setKey(String key) {
+        this.key = key;
     }
 }

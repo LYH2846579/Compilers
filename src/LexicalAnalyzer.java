@@ -404,7 +404,7 @@ public class LexicalAnalyzer
     public void printTable()
     {
         Set<Map.Entry<String, TableNode>> entries = table.entrySet();
-        System.out.println("===================================");
+        //System.out.println("===================================");
         //输出符号表 -> 上迭代器
         Iterator<Map.Entry<String, TableNode>> iterator = entries.iterator();
         while(iterator.hasNext())

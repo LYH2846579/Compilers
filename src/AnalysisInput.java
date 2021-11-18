@@ -1,4 +1,5 @@
 import org.junit.Test;
+import sun.awt.EventListenerAggregate;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -101,7 +102,7 @@ public class AnalysisInput
                         //判断符号栈 ->　是否规约出来文法的开始符号
                         if(symStack.peek().getName().equals("P"))
                         {
-                            System.out.println("Accept!");
+                            //System.out.println("Accept!");
                             //退出循环
                             //break;
                             this.ErrorTag = 0;
@@ -374,6 +375,16 @@ public class AnalysisInput
                             if(word1.getType().equals("letter") || word1.getType().equals("digit"))
                                 symbol.setCode(word1.getName());
 
+
+                            //添加占位空语句 -> 赋给e的属性值
+                            if(word1.getValue().equals("e"))
+                            {
+                                //当发现为else的时候 -> 还要单独处理一下，加一个三地址代码空语句
+                                addressCodeList.add("L"+ tag++ +": ");
+                                //记录tag
+                                symbol.setTagIndex(tag-1);
+                            }
+
                             //压入对象
                             symStack.push(symbol);
                             symStr += word1.getValue();
@@ -437,7 +448,7 @@ public class AnalysisInput
         } catch (Exception e)
         {
             //e.printStackTrace();
-            System.out.println("Syntax Errors!");
+            //System.out.println("Syntax Errors!");   //转移至主控单元内部输出
         }
         {
             if(this.ErrorTag == 0)
@@ -455,8 +466,16 @@ public class AnalysisInput
         String temp = "";
         String value1 = "";
         String value2 = "";
+        String value3 = "";
         String group = "";
         String group1 = "";
+        String temp1 = "";
+        String code1 = "";
+        String code2 = "";
+        Matcher matcher;
+        int tagIndex;
+        int index;
+        int flag = 0;
         //首选分析表达式的类型 ->　直接上switch-case可否?
         switch (exp)
         {
@@ -618,23 +637,26 @@ public class AnalysisInput
             case "S→f(C)S.":
                 //针对于if语句的规约
                 //首先创建一个跳转到下下条语句的跳转语句
-                addressCodeList.add("L"+ tag++ +": "+"goto "+(tag+2));
+                if(symStack.peek().getKey() != null)
+                    addressCodeList.add("L"+ tag++ +": "+"goto L"+(tag+2));
+                else
+                    addressCodeList.add("L"+ tag++ +": "+"goto L"+(tag+1));
 
                 //从S中获取其首代码地址  -> 可能为多位数!   //L10: a = c
-                Matcher matcher = Pattern.compile("L\\d{1,4}").matcher(symStack.peek().getValue());
+                matcher = Pattern.compile("L\\d{1,4}").matcher(symStack.peek().getValue());
                 if(matcher.find())
                 {
                     group = matcher.group(0);
                 }
-                String temp1 = "L"+ tag++ +": "+ "if(" + symStack.get(symStack.size()-3).getCode()+") goto "+ group;
+                temp1 = "L"+ tag++ +": "+ "if(" + symStack.get(symStack.size()-3).getCode()+") goto "+ group;
                 symbol.setValue(symStack.peek().getValue());
                 addressCodeList.add(temp1);
 
                 //接下来对原来空位置进行回填
                 //首先找到原来的位置
-                int tagIndex = symStack.get(symStack.size() - 3).getTagIndex();
+                tagIndex = symStack.get(symStack.size() - 3).getTagIndex();
                 //从三地址代码序列中寻找合适的语句
-                int index = 0;
+                index = 0;
                 for (int i = 0; i < addressCodeList.size(); i++)
                 {
                     String s = addressCodeList.get(i);
@@ -650,6 +672,228 @@ public class AnalysisInput
                 //将原句子替换
                 addressCodeList.add(index,"L"+tagIndex+": goto "+"L"+(tag-1));
 
+                //判断S的key属性是否为空 -> 若不为null就添加语句
+                if(symStack.peek().getKey() != null)
+                {
+                    addressCodeList.add("L"+ tag++ +": "+symStack.peek().getKey());
+                }
+
+                break;
+            case "S→f(C)SeS.":
+                //首先创建一个跳转到下下下条语句的跳转语句
+                //同样判断S的key属性
+                if(symStack.peek().getKey() != null)
+                    addressCodeList.add("L"+ tag++ +": "+"goto L"+(tag+3));
+                else
+                    addressCodeList.add("L"+ tag++ +": "+"goto L"+(tag+2));
+
+                if(symStack.peek().getKey() != null)
+                    System.out.println(symStack.peek().getKey() + "====");
+
+                matcher = Pattern.compile("L\\d{1,4}").matcher(symStack.get(symStack.size()-3).getValue());
+                if(matcher.find())
+                {
+                    group = matcher.group(0);
+                }
+                matcher = Pattern.compile("L\\d{1,4}").matcher(symStack.peek().getValue());
+                if(matcher.find())
+                {
+                    group1 = matcher.group(0);
+                }
+                temp = "L"+ tag++ +": "+ "if(" + symStack.get(symStack.size()-5).getCode()+") goto "+ group;
+                addressCodeList.add(temp);
+                temp1 = "L"+ tag++ +": "+ "goto " + group1;
+                addressCodeList.add(temp1);
+
+                group1 = group1.replaceAll("L","");
+
+                //symbol.setValue(symStack.peek().getValue());    //比较一下?
+                //判断两个S哪一个value值最小
+                group = group.replaceAll("L","");
+                group1 = group1.replaceAll("L","");
+                if(Integer.parseInt(group) > Integer.parseInt(group1))
+                    symbol.setValue(symStack.peek().getValue());
+                else
+                    symbol.setValue(symStack.get(symStack.size()-3).getValue());
+
+                //修改布尔表达式下方的跳转语句
+                tagIndex = symStack.get(symStack.size() - 5).getTagIndex();
+                //从三地址代码序列中寻找合适的语句
+                index = 0;
+                for (int i = 0; i < addressCodeList.size(); i++)
+                {
+                    String s = addressCodeList.get(i);
+                    Matcher matcher1 = Pattern.compile("L" + tagIndex + ": ").matcher(s);
+                    if(matcher1.find())
+                    {
+                        index = i;
+                        //应当进行替换！
+                        addressCodeList.remove(s);
+                        break;
+                    }
+                }
+                //将原句子替换    -> 直接跳转到if
+                addressCodeList.add(index,"L"+tagIndex+": goto "+"L"+(tag-2));
+
+                //接下来修改else中含有的语句信息
+                tagIndex = symStack.get(symStack.size() - 2).getTagIndex();
+                //从三地址代码序列中寻找合适的语句
+                index = 0;
+                for (int i = addressCodeList.size()-1 ; i >= 0 ; i--)
+                {
+                    String s = addressCodeList.get(i);
+                    Matcher matcher1 = Pattern.compile("L" + tagIndex + ": ").matcher(s);
+                    if(matcher1.find())
+                    {
+                        index = i;
+                        //应当进行替换！
+                        addressCodeList.remove(s);
+                        break;
+                    }
+                }
+                //将原句子替换    -> 直接跳转到if-else的下一条语句
+                //仍需判断是否存在仅仅跟随的句子
+                if(symStack.peek().getKey() != null)
+                    addressCodeList.add("L"+ tag++ +": "+ "goto "+"L"+(tag-1));
+                else
+                    addressCodeList.add(index,"L"+tagIndex+": goto L" + (Integer.parseInt(group1)+1));
+                break;
+            case "S→d=E;S.":
+                //此项已经被加入过!   ->　
+                //temp = "L"+ tag++ +": "+symStack.get(symStack.size()-5).getCode()+" = "+ symStack.get(symStack.size()-3).getCode();
+                //addressCodeList.add(temp);
+                //添加空语句?  -> 先不加
+                //addressCodeList.add("L"+ tag++ +": ");
+                //尝试在三地址代码序列中寻找到对应的语句!
+                code1 = symStack.get(symStack.size() - 5).getCode();
+                code2 = symStack.get(symStack.size() - 3).getCode();
+                code1 += " = ";
+                code1 += code2;
+                String group3 = "";
+                String group4 = "";
+                //查询code1
+                //从三地址代码序列中寻找合适的语句
+                index = 0;
+                for (int i = addressCodeList.size()-1 ; i >= 0 ; i--)
+                {
+                    String s = addressCodeList.get(i);
+                    Matcher matcher1 = Pattern.compile("L\\d{1,4}: "+code1).matcher(s);
+                    if(matcher1.find())
+                    {
+                        //记录此值!
+                        index = i;
+                        String group2 = matcher1.group(0);
+                        Matcher matcher2 = Pattern.compile("L\\d{1,4}").matcher(group2);
+                        if(matcher2.find())
+                        {
+                            group3 = matcher2.group(0);
+                            //取出数字单元
+                            group3 = group3.replaceAll("L","");
+
+                        }
+
+                        break;
+                    }
+                }
+                //判断记录哪一个值
+                String value = symStack.get(symStack.size() - 1).getValue();
+                if(value != null)
+                {
+                    Matcher matcher1 = Pattern.compile("L\\d{1,4}").matcher(value);
+                    if(matcher1.find())
+                    {
+                        group4 = matcher1.group(0);
+                        group4 = group4.replaceAll("L","");
+                    }
+
+                    //比较group3和group4
+                    if(Integer.parseInt(group3) > Integer.parseInt(group4))
+                    {
+                        symbol.setValue(symStack.get(symStack.size()-1).getValue());
+                    }
+                    else
+                        symbol.setValue(addressCodeList.get(index));
+                }
+                else
+                {
+                    symbol.setValue(addressCodeList.get(index));
+                }
+
+                //判断是否为跟随在if/while后面的句子
+                if(symStack.size() >= 9)        //防止越界访问
+                {
+                    Symbol symbol1 = symStack.get(symStack.size() - 9);
+                    //若为if或while语句 -> 增加跳转
+                    if(symbol1.getName().equals("f") || symbol1.getName().equals("w"))
+                    {
+                        //增加一条无条件跳转到S的语句 -> 同时位于首部的跳转下下条语句也要修改!
+                        //1、取出标号值
+                        value3 = symStack.peek().getValue();
+                        Matcher matcher1 = Pattern.compile("L\\d{1,4}").matcher(value3);
+                        if(matcher1.find())
+                        {
+                            value3 = matcher1.group(0);
+                            //添加语句 -> 添加到规约为的S属性key之中
+                            temp = "goto "+value3;
+                            symbol.setKey(temp);
+                        }
+                    }
+                }
+
+
+
+
+                //规约的时候也要判断
+                /*if(symStack.get(symStack.size()-1).getValue() != null)
+                    symbol.setValue(symStack.get(symStack.size()-1).getValue());
+                else
+                    symbol.setValue(temp);*/
+                break;
+            case "S→w(C)S.":
+                //无需加入跳转下下条代码语句
+
+                //从S中获取其首代码地址  -> 可能为多位数!   //L10: a = c
+                matcher = Pattern.compile("L\\d{1,4}").matcher(symStack.peek().getValue());
+                if(matcher.find())
+                {
+                    group = matcher.group(0);
+                }
+
+                //判断S的key属性
+                group = group.replaceAll("L","");
+                if(symStack.peek().getKey() != null)
+                    temp1 = "L"+ tag++ +": "+ "while (" + symStack.get(symStack.size()-3).getCode()+") goto L"+ (Integer.parseInt(group)-1);
+                else
+                    temp1 = "L"+ tag++ +": "+ "while (" + symStack.get(symStack.size()-3).getCode()+") goto L"+ Integer.parseInt(group);
+
+                symbol.setValue(symStack.peek().getValue());
+                addressCodeList.add(temp1);
+
+                //接下来对原来空位置进行回填
+                //首先找到原来的位置
+                tagIndex = symStack.get(symStack.size() - 3).getTagIndex();
+                //从三地址代码序列中寻找合适的语句
+                index = 0;
+                for (int i = 0; i < addressCodeList.size(); i++)
+                {
+                    String s = addressCodeList.get(i);
+                    Matcher matcher1 = Pattern.compile("L" + tagIndex + ": ").matcher(s);
+                    if(matcher1.find())
+                    {
+                        //应当进行替换！
+                        addressCodeList.remove(s);
+                        index = i;
+                        break;
+                    }
+                }
+                //将原句子替换
+                addressCodeList.add(index,"L"+tagIndex+": goto "+"L"+(tag-1));
+
+                //判断S的key属性是否为空 -> 若不为null就添加语句
+                if(symStack.peek().getKey() != null)
+                {
+                    addressCodeList.add("L"+ tag++ +": "+symStack.peek().getKey());
+                }
 
                 break;
             //symbol.setName(symStack.get(symStack.size()-3).getName());
@@ -688,5 +932,13 @@ public class AnalysisInput
 
     public void setAddressCodeList(ArrayList<String> addressCodeList) {
         this.addressCodeList = addressCodeList;
+    }
+
+    public LexicalAnalyzer getAnalyzer() {
+        return analyzer;
+    }
+
+    public void setAnalyzer(LexicalAnalyzer analyzer) {
+        this.analyzer = analyzer;
     }
 }
