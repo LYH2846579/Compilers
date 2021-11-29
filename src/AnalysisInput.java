@@ -40,6 +40,9 @@ public class AnalysisInput
     //备份一份输入Token序列供给语义处理使用
     private LinkedList<Word> tempList = new LinkedList<>();
 
+    //存储错误信息
+    private String ErrorInfo;
+
 
     public AnalysisInput() {
     }
@@ -59,6 +62,8 @@ public class AnalysisInput
             analyzer.createTable();
             //编码
             analyzer.analysisDeal();
+            //保存符号表
+            analyzer.saveTable();
 
             //语法分析预处理
             parseGrammar = new ParseGrammar();
@@ -67,6 +72,11 @@ public class AnalysisInput
             parseGrammar.firstCollection();
             parseGrammar.followCollection();
             parseGrammar.createActionGoToTable();
+
+            //存储信息
+            parseGrammar.saveFirstCollection();
+            parseGrammar.saveFollowCollection();
+            parseGrammar.saveActionGotoTable();
 
             //为备份的链表赋值 -> 便于语义处理
             analyzer.getAnalysis().forEach(word -> {
@@ -449,6 +459,10 @@ public class AnalysisInput
         {
             //e.printStackTrace();
             //System.out.println("Syntax Errors!");   //转移至主控单元内部输出
+            ErrorInfo = e.toString();
+            System.out.println("存在如下错误!");
+            System.out.println(ErrorInfo);
+            System.out.println();
         }
         {
             if(this.ErrorTag == 0)

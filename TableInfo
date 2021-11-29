@@ -1,0 +1,20 @@
+Token序列:
+Word{Type='KeyWord', name='if', value='f'}
+Word{Type='OP', name='(', value='('}
+Word{Type='letter', name='a', value='d'}
+Word{Type='OP', name='<', value='<'}
+Word{Type='letter', name='b', value='d'}
+Word{Type='OP', name=')', value=')'}
+Word{Type='letter', name='a', value='d'}
+Word{Type='OP', name='=', value='='}
+Word{Type='letter', name='b1', value='d'}
+Word{Type='OP', name=';', value=';'}
+Word{Type='letter', name='b', value='d'}
+Word{Type='OP', name='=', value='='}
+Word{Type='digit', name='1', value='g'}
+Word{Type='OP', name=';', value=';'}
+Word{Type='KeyWord', name='$', value='$'}
+=============================
+符号表:
+a TableNode{i=0, f=null, name='a', word=Word{Type='KeyWord', name='int', value='null'}}
+b TableNode{i=0, f=null, name='b', word=Word{Type='KeyWord', name='int', value='null'}}

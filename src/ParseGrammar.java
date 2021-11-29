@@ -1,8 +1,6 @@
 import org.junit.Test;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,6 +29,10 @@ public class ParseGrammar
         this.firstCollection();
         this.followCollection();
         this.createActionGoToTable();
+        this.saveActionGotoTable();
+        this.saveFirstCollection();
+        this.saveFollowCollection();
+        System.out.println();
     }
 
 
@@ -103,7 +105,7 @@ public class ParseGrammar
         try
         {
             //从文件中读取数据
-            FileInputStream fis = new FileInputStream("F:\\Java\\Compilers\\src\\grammar");
+            FileInputStream fis = new FileInputStream("grammar");
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             int read = 0;
             byte[] buffer = new byte[5];
@@ -981,6 +983,123 @@ public class ParseGrammar
         //System.out.println();
         //System.out.println();
 
+    }
+
+    //尝试将Action-Goto表保存到文件之中
+    public void saveActionGotoTable()
+    {
+        FileOutputStream fos = null;
+        try
+        {
+            fos = new FileOutputStream("ActionGotoTable.txt");
+            String temp;
+            FileOutputStream finalFos = fos;
+            actGoToTable.forEach((key, value) -> {
+                try
+                {
+                    finalFos.write("Key: \n".getBytes());
+                    finalFos.write(key.toString().getBytes());
+                    finalFos.write("\n".getBytes());
+                    finalFos.write("Value: \n".getBytes());
+                    value.forEach((key1,value1) -> {
+                        try
+                        {
+                            finalFos.write((key1+" -> ").getBytes());
+                            finalFos.write(value1.toString().getBytes());
+                            finalFos.write("\n".getBytes());
+                        } catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+                    });
+                    finalFos.write("\n=====================================\n".getBytes());
+                } catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            });
+        } catch (FileNotFoundException e)
+        {
+            e.printStackTrace();
+        } finally
+        {
+            try
+            {
+                if(fos != null)
+                    fos.close();
+            } catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
+
+    }
+    //尝试将first集保存到文件之中
+    public void saveFirstCollection()
+    {
+        FileOutputStream fos = null;
+        try
+        {
+            fos = new FileOutputStream("FirstCollection.txt");
+            FileOutputStream finalFos = fos;
+            firstlist.forEach((key, value) -> {
+                try
+                {
+                    finalFos.write(("First("+key+"): {").getBytes());
+                    value.forEach(s -> {
+                        try
+                        {
+                            finalFos.write((s+" ").getBytes());
+                        } catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+                    });
+                    finalFos.write("}\n".getBytes());
+                } catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            });
+        } catch (FileNotFoundException e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            try
+            {
+                if(fos != null)
+                    fos.close();
+            } catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+    //尝试保存follow集到文件之中
+    public void saveFollowCollection() throws FileNotFoundException
+    {
+        FileOutputStream fos = new FileOutputStream("FollowCollection.txt");
+        followMap.forEach((key,value) -> {
+            try
+            {
+                fos.write(("Follow("+key+"): {").getBytes());
+                value.forEach(s -> {
+                    try
+                    {
+                        fos.write((s+" ").getBytes());
+                    } catch (IOException e)
+                    {
+                        e.printStackTrace();
+                    }
+                });
+                fos.write("}\n".getBytes());
+            } catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        });
     }
 
 }

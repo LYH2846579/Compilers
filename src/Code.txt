@@ -54,6 +54,13 @@ else
 
 a = a + 1;
 
+测试集4(错误测试集):
+int a;
+int b;
+
+while  a > b
+    a = b;
+
 
 
 暂存文法

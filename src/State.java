@@ -58,5 +58,14 @@ public class State
         this.list2 = list2;
     }
 
-    
+    @Override
+    public String toString() {
+        return "State{" +
+                "name='" + name + '\'' +
+                ", str=" + str +
+                ", list1=" + list1 +
+                ", list2=" + list2 +
+                '}';
+    }
 }
+

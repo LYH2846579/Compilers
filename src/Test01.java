@@ -1,10 +1,6 @@
 import org.junit.Test;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.time.temporal.ValueRange;
+import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -33,7 +29,7 @@ public class Test01
     @Test   //测试输入
     public void test2() throws IOException
     {
-        FileInputStream fis = new FileInputStream("F:\\Java\\Compilers\\src\\Hello.txt");
+        FileInputStream fis = new FileInputStream("Input.txt");
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         int read = 0;
         byte[] buffer = new byte[5];
@@ -219,11 +215,13 @@ public class Test01
     }
 
     @Test   //针对词法分析器、语法分析器的测试
-    public void test14()
+    public void test14() throws FileNotFoundException
     {
         LexicalAnalyzer analyzer = new LexicalAnalyzer();
         analyzer.analysis();
         analyzer.createTable();
+        analyzer.saveTable();
+        analyzer.printTable();
 
         ParseGrammar parseGrammar = new ParseGrammar();
         parseGrammar.parse();
@@ -313,5 +311,32 @@ public class Test01
         }
         //String group = Pattern.compile("L..:").matcher(s).group(0);
         //System.out.println(group);
+    }
+
+    @Test   //输入界面测试
+    public void test20()
+    {
+        LexicalAnalyzer analyzer = new LexicalAnalyzer();
+        analyzer.inputWindow();
+    }
+
+
+    @Test   //本地文件测试
+    public void test21()
+    {
+        try
+        {
+            FileOutputStream fos = new FileOutputStream("Hello.txt");
+            try
+            {
+                fos.write("Hello World!".getBytes());
+            } catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        } catch (FileNotFoundException e)
+        {
+            e.printStackTrace();
+        }
     }
 }

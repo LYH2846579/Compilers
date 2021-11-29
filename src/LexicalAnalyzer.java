@@ -1,10 +1,9 @@
 import org.junit.Test;
+import sun.awt.SunHints;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * @author LYHstart
@@ -15,7 +14,7 @@ import java.util.*;
 public class LexicalAnalyzer
 {
     @Test
-    public void test() throws IOException
+    public void test()
     {
         //词法分析器
         analysis = analysis();
@@ -41,209 +40,224 @@ public class LexicalAnalyzer
         return table;
     }
 
+    //错误信息
+    private String ErrorInfo;
+
     //实现词法分析
     public LinkedList<Word> analysis()
     {
-        LinkedList<Word> list = new LinkedList<>();
-
-        //辅助变量
-        int flag = 1;
-
-        //载入数据
-        /**/
-        ByteArrayOutputStream baos = null;
         try
         {
-            FileInputStream fis = new FileInputStream("F:\\Java\\Compilers\\src\\Hello.txt");
-            baos = new ByteArrayOutputStream();
-            int read = 0;
-            byte[] buffer = new byte[5];
-            while((read = fis.read(buffer)) != -1)
+            LinkedList<Word> list = new LinkedList<>();
+
+            //辅助变量
+            int flag = 1;
+
+            //载入数据
+            /**/
+            ByteArrayOutputStream baos = null;
+            try
             {
-                baos.write(buffer,0,read);
-            }
-        } catch (IOException e)
-        {
-            e.printStackTrace();
-        }
-
-
-        //接下来将数据分片 -> 得到String类型的数组
-        String string = baos.toString();
-
-        //处理字符串\n\r   ->  !     //难道正则无法处理\n\r的选项??? -> 使用返回值接收!!
-        string = string.replaceAll("\n|\r"," ");
-
-        System.out.println(string);
-        System.out.println("=========================================");
-
-
-        //String string = "int abc = 100;";
-        String[] split = string.split(" ");
-
-        //设置一下辅助变量 -> 解决多位问题
-        String temp = "";               //用于暂时储备多位变量中的前几位
-        String type = "";               //用于存储多位变量的类型
-
-        //接下来对数组中的每一个元素进行分析
-        for(String s:split)
-        {
-
-            //当然可以首先对元素进行正则匹配
-            Word word = regString(s);
-            if(word != null)
-            {
-                //判断前位元素
-                if(temp.length() != 0)
+                FileInputStream fis = new FileInputStream("Input.txt");
+                baos = new ByteArrayOutputStream();
+                int read = 0;
+                byte[] buffer = new byte[5];
+                while((read = fis.read(buffer)) != -1)
                 {
-                    Word wordTemp = null;
-                    //这里需要考虑变量值的问题
-                    if(type == "digit")         //倘若为数字
-                    {
-                        wordTemp = new Word(type,temp,type);
-                    }
-                    else if(type == "letter")
-                        wordTemp = new Word(type,temp,null);
-
-                    //初始化
-                    temp = "";
-                    type = "";
-
-                    list.offerLast(wordTemp);
+                    baos.write(buffer,0,read);
                 }
-
-
-                list.offerLast(word);
-                flag = 0;   //允许多位定义变量
-            }
-            else
+            } catch (IOException e)
             {
-                //倘若不是关键字，接下来进行分析
-                byte[] bytes = s.getBytes();
-                for(Byte b:bytes)
+                e.printStackTrace();
+            }
+
+
+            //接下来将数据分片 -> 得到String类型的数组
+            String string = baos.toString();
+
+            //处理字符串\n\r   ->  !     //难道正则无法处理\n\r的选项??? -> 使用返回值接收!!
+            string = string.replaceAll("\n|\r"," ");
+
+            System.out.println(string);
+            System.out.println("=========================================");
+
+
+            //String string = "int abc = 100;";
+            String[] split = string.split(" ");
+
+            //设置一下辅助变量 -> 解决多位问题
+            String temp = "";               //用于暂时储备多位变量中的前几位
+            String type = "";               //用于存储多位变量的类型
+
+            //接下来对数组中的每一个元素进行分析
+            for(String s:split)
+            {
+
+                //当然可以首先对元素进行正则匹配
+                Word word = regString(s);
+                if(word != null)
                 {
-                    //必须将byte转换为String进行匹配
-                    char c = (char)Integer.parseInt(b.toString());
-                    String byStr = "" + c;
-                    /*
-                    if(b.equals(";"))
+                    //判断前位元素
+                    if(temp.length() != 0)
                     {
-                        Word word = new Word("OP",";",null);
-                        list.offerLast(word);
-                        flag = 1;       //不允许多位定义变量
+                        Word wordTemp = null;
+                        //这里需要考虑变量值的问题
+                        if(type == "digit")         //倘若为数字
+                        {
+                            wordTemp = new Word(type,temp,type);
+                        }
+                        else if(type == "letter")
+                            wordTemp = new Word(type,temp,null);
+
+                        //初始化
+                        temp = "";
+                        type = "";
+
+                        list.offerLast(wordTemp);
                     }
 
-                    //考虑的一下，这里使用switch-case语句可能会更好
-                    switch (b)
+
+                    list.offerLast(word);
+                    flag = 0;   //允许多位定义变量
+                }
+                else
+                {
+                    //倘若不是关键字，接下来进行分析
+                    byte[] bytes = s.getBytes();
+                    for(Byte b:bytes)
                     {
-                        case ';':
+                        //必须将byte转换为String进行匹配
+                        char c = (char)Integer.parseInt(b.toString());
+                        String byStr = "" + c;
+                        /*
+                        if(b.equals(";"))
+                        {
                             Word word = new Word("OP",";",null);
                             list.offerLast(word);
+                            flag = 1;       //不允许多位定义变量
+                        }
+
+                        //考虑的一下，这里使用switch-case语句可能会更好
+                        switch (b)
+                        {
+                            case ';':
+                                Word word = new Word("OP",";",null);
+                                list.offerLast(word);
+                                flag = 1;   //接下来不允许多位定义变量及多位赋值情况
+                                break;
+
+                        }
+                        */
+                        //后来觉得使用正则还是更容易
+                        if(byStr.matches(";"))
+                        {
+                            //必须判断temp中是否存有字符
+                            if(temp.length() != 0)
+                            {
+                                Word wordTemp = null;
+                                //这里需要考虑变量值的问题
+                                if(type == "digit")         //倘若为数字
+                                {
+                                    wordTemp = new Word(type,temp,type);
+                                }
+                                else if(type == "letter")
+                                {
+                                    wordTemp = new Word(type,temp,null);
+                                }
+
+                                //初始化
+                                temp = "";
+                                type = "";
+
+                                list.offerLast(wordTemp);
+                                flag = 1;
+                            }
+
+                            Word word1 = new Word("OP",";",null);
+                            list.offerLast(word1);
                             flag = 1;   //接下来不允许多位定义变量及多位赋值情况
-                            break;
-
-                    }
-                    */
-                    //后来觉得使用正则还是更容易
-                    if(byStr.matches(";"))
-                    {
-                        //必须判断temp中是否存有字符
-                        if(temp.length() != 0)
+                        }
+                        else if(byStr.matches("[0-9]"))         //倘若为数字
                         {
-                            Word wordTemp = null;
-                            //这里需要考虑变量值的问题
-                            if(type == "digit")         //倘若为数字
+                            //倘若前面变量为关键字等 -> 允许多位赋值
+                            if(flag == 0 && temp.length()==0)   //此时还未给temp赋值
                             {
-                                wordTemp = new Word(type,temp,type);
+                                //存储到temp中
+                                temp += byStr;
+                                //将属性定义下来
+                                type = "digit";         //属性为数字
                             }
-                            else if(type == "letter")
+                            else if(flag == 0 && temp.length() != 0)    //这里保证变量中可以出现数字
+                            {                                           //同时保证数字不可以出现在变量开头
+                                //存储到temp中
+                                temp += byStr;
+                            }
+                            //若flag = 1  --> 不允许连续定义 -> 直接加入list
+                            else if(flag == 1)
                             {
-                                wordTemp = new Word(type,temp,null);
+                                //为单个字符
+                                Word word1 = new Word("digit",byStr,byStr);
+                                list.offerLast(word1);
                             }
 
-                            //初始化
-                            temp = "";
-                            type = "";
+                        }
+                        else if(byStr.matches("[a-zA-Z_]"))     //倘若属于字符序列
+                        {
+                            //一下处理与数字类似
+                            if(flag == 0 && temp.length()==0)
+                            {
+                                temp += byStr;
+                                type = "letter";
+                            }
+                            else if(flag == 0 && temp.length() != 0)
+                            {
+                                temp += byStr;
+                            }
+                            else if(flag == 1)
+                            {
+                                //为单个字符
+                                Word word1 = new Word("letter",byStr,byStr);
+                                list.offerLast(word1);
+                            }
+                        }
+                        else if(byStr.matches("\\."))   //处理小数问题
+                        {
+                            if(temp.length() == 0)
+                            {
+                                temp += "0.";
+                                type = "digit";
+                            }
+                            else if(temp.length() != 0 && type.equals("digit"))
+                            {
+                                temp += ".";
+                            }
+                            else
+                                throw new RuntimeException("输的啥???");
+                        }
 
-                            list.offerLast(wordTemp);
-                            flag = 1;
-                        }
-
-                        Word word1 = new Word("OP",";",null);
-                        list.offerLast(word1);
-                        flag = 1;   //接下来不允许多位定义变量及多位赋值情况
                     }
-                    else if(byStr.matches("[0-9]"))         //倘若为数字
-                    {
-                        //倘若前面变量为关键字等 -> 允许多位赋值
-                        if(flag == 0 && temp.length()==0)   //此时还未给temp赋值
-                        {
-                            //存储到temp中
-                            temp += byStr;
-                            //将属性定义下来
-                            type = "digit";         //属性为数字
-                        }
-                        else if(flag == 0 && temp.length() != 0)    //这里保证变量中可以出现数字
-                        {                                           //同时保证数字不可以出现在变量开头
-                            //存储到temp中
-                            temp += byStr;
-                        }
-                        //若flag = 1  --> 不允许连续定义 -> 直接加入list
-                        else if(flag == 1)
-                        {
-                            //为单个字符
-                            Word word1 = new Word("digit",byStr,byStr);
-                            list.offerLast(word1);
-                        }
-
-                    }
-                    else if(byStr.matches("[a-zA-Z_]"))     //倘若属于字符序列
-                    {
-                        //一下处理与数字类似
-                        if(flag == 0 && temp.length()==0)
-                        {
-                            temp += byStr;
-                            type = "letter";
-                        }
-                        else if(flag == 0 && temp.length() != 0)
-                        {
-                            temp += byStr;
-                        }
-                        else if(flag == 1)
-                        {
-                            //为单个字符
-                            Word word1 = new Word("letter",byStr,byStr);
-                            list.offerLast(word1);
-                        }
-                    }
-                    else if(byStr.matches("\\."))   //处理小数问题
-                    {
-                        if(temp.length() == 0)
-                        {
-                            temp += "0.";
-                            type = "digit";
-                        }
-                        else if(temp.length() != 0 && type.equals("digit"))
-                        {
-                            temp += ".";
-                        }
-                        else
-                            throw new RuntimeException("输的啥???");
-                    }
-
                 }
+
+
             }
 
+            //加入终结符号
+            list.add(new Word("KeyWord","$","$"));
 
+            //修改属性值 -> 方便外部调用
+            this.analysis = list;
+
+            return list;
+        } catch (RuntimeException e)
+        {
+            //e.printStackTrace();
+            ErrorInfo = e.toString();
+            System.out.println();
         }
-
-        //加入终结符号
-        list.add(new Word("KeyWord","$","$"));
-
-        //修改属性值 -> 方便外部调用
-        this.analysis = list;
-
-        return list;
+        finally
+        {
+            return null;
+        }
     }
 
     //针对关键字的正则匹配
@@ -441,6 +455,98 @@ public class LexicalAnalyzer
                     analysis.get(i).setValue("e");
                 else if(analysis.get(i).getName().equals("if"))
                     analysis.get(i).setValue("f");
+            }
+        }
+    }
+
+
+    //Token序列输出及符号表输出到文件
+    public void saveTable()
+    {
+        FileOutputStream fos = null;
+        try
+        {
+            fos = new FileOutputStream("TableInfo");
+        } catch (FileNotFoundException e)
+        {
+            e.printStackTrace();
+        }
+        LinkedList<Word> analysis = this.getAnalysis();
+        FileOutputStream finalFos = fos;
+        //保存Token序列
+        try
+        {
+            finalFos.write("Token序列:".getBytes());
+            finalFos.write("\n".getBytes());
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        analysis.forEach((word) -> {
+            try
+            {
+                finalFos.write(word.toString().getBytes());
+                finalFos.write("\n".getBytes());
+            } catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        });
+        //保存符号表
+        try
+        {
+            finalFos.write("=============================".getBytes());
+            finalFos.write("\n".getBytes());
+            finalFos.write("符号表:".getBytes());
+            finalFos.write("\n".getBytes());
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        this.table.forEach((key, value) -> {
+            try
+            {
+                finalFos.write(key.getBytes());
+                finalFos.write(" ".getBytes());
+                finalFos.write(value.toString().getBytes());
+                finalFos.write("\n".getBytes());
+            } catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        });
+    }
+
+
+    //提供输入界面 -> 提供一个从输入框输入的方法
+    public void inputWindow()
+    {
+        FileOutputStream fos = null;
+        try
+        {
+            Scanner scan = new Scanner(System.in);
+            String s = "";
+            fos = new FileOutputStream("Input.txt");
+            System.out.println("请输入Code:");
+            s = scan.nextLine();
+            while(!s.equals(""))
+            {
+                fos.write(s.getBytes());
+                fos.write("\n".getBytes());
+                s = scan.nextLine();
+            }
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        } finally
+        {
+            try
+            {
+                if(fos != null)
+                    fos.close();
+            } catch (IOException e)
+            {
+                e.printStackTrace();
             }
         }
     }
